@@ -1,0 +1,15 @@
+common:
+  absentDays:
+  - 2018-12-24
+  - 2018-12-25
+  - 2019-01-01
+people:
+- person: foo
+  absentDays:
+  - 2018-10-31
+  - 2018-11-01
+- person: bar
+  absentDays:
+  - 2018-10-31
+  - 2018-11-01
+  - 2018-11-02

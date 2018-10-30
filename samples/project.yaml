@@ -1,0 +1,29 @@
+- title: Group 1
+  tasks:
+  - title: Task A
+    label: A
+    effort: 1
+    owner: foo
+    requires: []
+  - title: Task B
+    label: B
+    effort: 2
+    owner: foo
+    requires: [A]
+- title: Group 2
+  tasks:
+  - title: Task C
+    label: C
+    effort: 1
+    owner: foo
+    requires: [B]
+  - title: Task D
+    label: D
+    effort: 1
+    owner: foo
+    requires: [C]
+  - title: Task E
+    label: E
+    effort: 1
+    owner: foo
+    requires: [A]

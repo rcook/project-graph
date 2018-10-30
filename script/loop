@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+
+this_dir=$(cd $(dirname $0); pwd -P)
+repo_dir=$(dirname $this_dir)
+samples_dir=$repo_dir/samples
+
+cd $repo_dir
+stack exec ghcid -- -T":main $samples_dir/project.yaml $samples_dir/availability.yaml 2018-10-30"
