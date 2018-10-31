@@ -6,17 +6,18 @@
 
 module Main (main) where
 
+import           Control.Error.Util (note)
 import           Control.Monad (when)
 import qualified Data.ByteString.Lazy as ByteString (writeFile)
 import           Data.Char (toLower)
 import           Data.Csv (ToField(..), ToRecord(..))
 import qualified Data.Csv as Csv (encode, record)
-import           Data.Foldable (for_)
+import           Data.Foldable (foldlM, for_)
 import           Data.Graph (edges, vertices)
 import qualified Data.GraphViz as GraphViz (graphElemsToDot, printDotGraph, quickParams)
 import           Data.List (foldl')
 import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map (empty, fromList, insert, mapWithKey, member)
+import qualified Data.Map.Strict as Map (empty, fromList, insert, lookup, mapWithKey, member)
 import           Data.Set (Set)
 import qualified Data.Set as Set (fromList, union)
 import           Data.String (IsString)
@@ -140,21 +141,21 @@ instance ToRecord ScheduledTask where
             ]
         where tTitle = title :: Task -> String
 
-schedule :: Map Person AbsentDays -> PeopleDays -> [Task] -> Schedule
-schedule peopleMap peopleDays tasks =
-    let (_, result) = foldl'
-                        (\(peopleDays', sts) t ->
-                            let o = owner t
+schedule :: Map Person AbsentDays -> PeopleDays -> [Task] -> Either String Schedule
+schedule peopleMap peopleDays tasks = do
+    (_, result) <- foldlM
+                        (\(peopleDays', sts) t -> do
+                            let o@(Person s) = owner t
                                 eff = effort t
-                                startDay = unsafeLookUp o peopleDays'
-                                absentDays = unsafeLookUp o peopleMap
-                                endDay = addWorkdays absentDays (eff - 1) startDay
+                            startDay <- note ("Could not find person " ++ s) $ Map.lookup o peopleDays'
+                            absentDays <- note ("Could not find person " ++ s) $ Map.lookup o peopleMap
+                            let endDay = addWorkdays absentDays (eff - 1) startDay
                                 nextDay = addWorkdays absentDays 1 endDay
                                 peopleDays'' = Map.insert o nextDay peopleDays'
-                            in (peopleDays'', sts ++ [ScheduledTask t startDay endDay])) -- ICK
+                            return (peopleDays'', sts ++ [ScheduledTask t startDay endDay])) -- ICK
                         (peopleDays, [])
                         tasks
-    in result
+    return result
 
 main :: IO ()
 main = execParser opts >>= runWithOpts
@@ -236,7 +237,9 @@ runWithOpts opts = do
         g = dependencyGraph is ds
         orderedTasks = map ((flip unsafeLookUp) (flipMap is)) (topSort g)
 
-    let result = schedule (peopleMap calendar) peopleDays orderedTasks
+    let result = case schedule (peopleMap calendar) peopleDays orderedTasks of
+                Right x -> x
+                Left s -> error s
 
     print result
 

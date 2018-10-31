@@ -21,6 +21,7 @@ executable project-graph
                         , bytestring
                         , cassava
                         , containers
+                        , errors
                         , filepath
                         , graphviz
                         , optparse-applicative
