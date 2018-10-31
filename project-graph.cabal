@@ -22,8 +22,10 @@ executable project-graph
                         , cassava
                         , containers
                         , filepath
+                        , graphviz
                         , optparse-applicative
                         , project-graph
+                        , text
                         , time
                         , yaml
 

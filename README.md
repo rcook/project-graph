@@ -44,7 +44,7 @@ Task C,1,foo,2018-11-06,2018-11-06
 Task D,1,foo,2018-11-07,2018-11-07
 ```
 
-The plan is for this tool to generate output in Excel, CSV and/or Graphviz format eventually.
+The tool currently supports output in plain text, CSV and GraphViz (DOT) formats.
 
 ## Licence
 

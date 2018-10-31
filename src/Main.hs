@@ -12,12 +12,15 @@ import           Data.Char (toLower)
 import           Data.Csv (ToField(..), ToRecord(..))
 import qualified Data.Csv as Csv (encode, record)
 import           Data.Foldable (for_)
+import           Data.Graph (edges, vertices)
+import qualified Data.GraphViz as GraphViz (graphElemsToDot, printDotGraph, quickParams)
 import           Data.List (foldl')
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (empty, fromList, insert, mapWithKey, member)
 import           Data.Set (Set)
 import qualified Data.Set as Set (fromList, union)
 import           Data.String (IsString)
+import qualified Data.Text.Lazy.IO as Text (writeFile)
 import           Data.Time (Day)
 import           Data.Yaml (FromJSON, ToJSON, decodeFileThrow, encodeFile)
 import           GHC.Generics (Generic)
@@ -33,12 +36,13 @@ import ProjectGraph.TopSort
 
 type PeopleDays = Map Person Day
 
-data OutputFormat = CSV | Text
+data OutputFormat = CSV | DOT | Text
 
 outputFormat :: FilePath -> Maybe OutputFormat
 outputFormat p =
     case map toLower (takeExtension p) of
         ".csv" -> Just CSV
+        ".dot" -> Just DOT
         ".txt" -> Just Text
         _ -> Nothing
 
@@ -193,6 +197,18 @@ resolveAvailability (Availability c ps) =
     in Calendar (Map.fromList (map (resolvePersonAvailability commonAbsentDays) ps))
     where caAbsentDays = absentDays :: CommonAvailability -> [Day]
 
+
+taskTitle :: Task -> String
+taskTitle = title :: Task -> String
+
+taskLabelCompact :: Task -> String
+taskLabelCompact task =
+    printf
+        "%s\n%s\neffort: %d"
+        (taskTitle task)
+        (let Person s = owner task in s)
+        (effort task)
+
 runWithOpts :: Options -> IO ()
 runWithOpts opts = do
     let p = outputPath opts
@@ -224,15 +240,22 @@ runWithOpts opts = do
 
     case fmt of
         CSV -> ByteString.writeFile p (Csv.encode result)
+        DOT -> do
+            let ns = map (\idx -> let task = (flip unsafeLookUp) (flipMap is) idx in (idx, taskLabelCompact task)) (vertices g)
+                es = map (\(f, t) -> (f, t, "")) (edges g)
+                dotGraph = GraphViz.graphElemsToDot
+                    GraphViz.quickParams
+                    ns
+                    es
+            Text.writeFile p (GraphViz.printDotGraph dotGraph)
         Text -> withFile p WriteMode
                     (\h -> for_ result $ \scheduledTask -> do
                                 let t = task scheduledTask
                                     s = startDay scheduledTask
                                     e = endDay scheduledTask
-                                    tTitle = title :: Task -> String
                                 hPutStrLn h $ printf "task: %s, effort: %d days, owner: %s, startDay: %s, endDay: %s"
-                                                (tTitle t)
+                                                (taskTitle t)
                                                 (effort t)
-                                                (show $ owner t)
+                                                (let Person s = owner t in s)
                                                 (show s)
                                                 (show e))
