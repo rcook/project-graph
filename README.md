@@ -24,8 +24,8 @@ stack build --fast
 
 Notes:
 
-* `samples/project.yaml` defines the project's groups and tasks
-* `samples/availability.yaml` defines the team members and their availability
+* [`samples/project.yaml`][project-yaml] defines the project's groups and tasks
+* [`samples/availability.yaml`][availability-yaml] defines the team members and their availability
 * `2018-10-29` is the start date of the project
 
 The output looks something like:
@@ -47,4 +47,6 @@ Released under [MIT License][licence]
 
 Copyright &copy; 2018, Richard Cook. All rights reserved.
 
+[availability-yaml]: samples/availability.yaml
 [licence]: LICENSE
+[project-yaml]: samples/project.yaml
