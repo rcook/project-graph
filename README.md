@@ -22,6 +22,12 @@ stack build --fast
 
 ## Sample output
 
+Here's a sample command line:
+
+```bash
+stack exec project-graph samples/project.yaml samples/availability.yaml 2018-10-29 output.csv
+```
+
 Notes:
 
 * [`samples/project.yaml`][project-yaml] defines the project's groups and tasks
@@ -30,13 +36,12 @@ Notes:
 
 The output looks something like:
 
-```bash
-$ stack exec project-graph samples/project.yaml samples/availability.yaml 2018-10-29
-task: Task A, effort: 1 days, owner: Person "foo", startDay: 2018-10-29, endDay: 2018-10-29
-task: Task E, effort: 1 days, owner: Person "foo", startDay: 2018-10-30, endDay: 2018-10-30
-task: Task B, effort: 2 days, owner: Person "foo", startDay: 2018-11-02, endDay: 2018-11-05
-task: Task C, effort: 1 days, owner: Person "foo", startDay: 2018-11-06, endDay: 2018-11-06
-task: Task D, effort: 1 days, owner: Person "foo", startDay: 2018-11-07, endDay: 2018-11-07
+```csv
+Task A,1,foo,2018-10-29,2018-10-29
+Task E,1,foo,2018-10-30,2018-10-30
+Task B,2,foo,2018-11-02,2018-11-05
+Task C,1,foo,2018-11-06,2018-11-06
+Task D,1,foo,2018-11-07,2018-11-07
 ```
 
 The plan is for this tool to generate output in Excel, CSV and/or Graphviz format eventually.

@@ -7,6 +7,10 @@
 module Main (main) where
 
 import           Control.Monad (when)
+import qualified Data.ByteString.Lazy as ByteString (writeFile)
+import           Data.Char (toLower)
+import           Data.Csv (ToField(..), ToRecord(..))
+import qualified Data.Csv as Csv (encode, record)
 import           Data.Foldable (for_)
 import           Data.List (foldl')
 import           Data.Map.Strict (Map)
@@ -19,6 +23,8 @@ import           Data.Yaml (FromJSON, ToJSON, decodeFileThrow, encodeFile)
 import           GHC.Generics (Generic)
 import           Options.Applicative (ReadM, argument, execParser, info, maybeReader, metavar, str)
 import           System.Exit (exitFailure, exitSuccess)
+import           System.FilePath (takeExtension)
+import           System.IO (IOMode(..), hPutStrLn, withFile)
 import           Text.Printf (printf)
 import           Text.Read (readMaybe)
 
@@ -27,12 +33,22 @@ import ProjectGraph.TopSort
 
 type PeopleDays = Map Person Day
 
+data OutputFormat = CSV | Text
+
+outputFormat :: FilePath -> Maybe OutputFormat
+outputFormat p =
+    case map toLower (takeExtension p) of
+        ".csv" -> Just CSV
+        ".txt" -> Just Text
+        _ -> Nothing
+
 -- Command-line options
 
 data Options = Options
     { projectPath :: FilePath
     , availabilityPath :: FilePath
     , startDate :: Day
+    , outputPath :: FilePath
     }
 
 -- YAML serialization
@@ -107,7 +123,17 @@ data ScheduledTask = ScheduledTask
     , startDay :: Day
     , endDay :: Day
     }
-    deriving Show
+
+instance ToRecord ScheduledTask where
+    toRecord (ScheduledTask t s e) =
+        Csv.record
+            [ toField (tTitle t)
+            , toField (effort t)
+            , let Person s = owner t in toField s
+            , toField (show s)
+            , toField (show e)
+            ]
+        where tTitle = title :: Task -> String
 
 schedule :: Map Person AbsentDays -> PeopleDays -> [Task] -> Schedule
 schedule peopleMap peopleDays tasks =
@@ -132,6 +158,7 @@ main = execParser opts >>= runWithOpts
             <$> argument str (metavar "PROJECTPATH")
             <*> argument str (metavar "AVAILABILITYPATH")
             <*> argument (maybeReader parseDate) (metavar "STARTDATE")
+            <*> argument str (metavar "OUTPUTPATH")
         opts = info parser mempty
 
 data CommonAvailability = CommonAvailability
@@ -168,6 +195,11 @@ resolveAvailability (Availability c ps) =
 
 runWithOpts :: Options -> IO ()
 runWithOpts opts = do
+    let p = outputPath opts
+        fmt = case outputFormat p of
+                Just x -> x
+                _ -> error "Unsupported output format"
+
     availability <- decodeFileThrow (availabilityPath opts)
 
     let calendar = resolveAvailability availability
@@ -189,16 +221,18 @@ runWithOpts opts = do
         orderedTasks = map ((flip unsafeLookUp) (flipMap is)) (topSort g)
 
     let result = schedule (peopleMap calendar) peopleDays orderedTasks
-    for_
-        result $ \scheduledTask -> do
-            let t = task scheduledTask
-                s = startDay scheduledTask
-                e = endDay scheduledTask
-            putStrLn $ printf "task: %s, effort: %d days, owner: %s, startDay: %s, endDay: %s"
-                            (tTitle t)
-                            (effort t)
-                            (show $ owner t)
-                            (show s)
-                            (show e)
 
-    where tTitle = title :: Task -> String
+    case fmt of
+        CSV -> ByteString.writeFile p (Csv.encode result)
+        Text -> withFile p WriteMode
+                    (\h -> for_ result $ \scheduledTask -> do
+                                let t = task scheduledTask
+                                    s = startDay scheduledTask
+                                    e = endDay scheduledTask
+                                    tTitle = title :: Task -> String
+                                hPutStrLn h $ printf "task: %s, effort: %d days, owner: %s, startDay: %s, endDay: %s"
+                                                (tTitle t)
+                                                (effort t)
+                                                (show $ owner t)
+                                                (show s)
+                                                (show e))

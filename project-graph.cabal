@@ -18,7 +18,10 @@ executable project-graph
   hs-source-dirs:         src
   main-is:                Main.hs
   build-depends:          base >= 4.7 && < 5
+                        , bytestring
+                        , cassava
                         , containers
+                        , filepath
                         , optparse-applicative
                         , project-graph
                         , time
