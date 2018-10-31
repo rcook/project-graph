@@ -82,7 +82,7 @@ data Task = Task
 
 -- Plan
 
-type TaskMap = Map String Task
+type TaskMap = Map TaskLabel Task
 
 data Plan = Plan
     { messages :: [String]
@@ -99,13 +99,13 @@ resolveGroup :: Plan -> Group -> Maybe Plan
 resolveGroup plan g =
     foldlM
         (\(Plan es ts' ds) t -> do
-            requiredTasks <- mapM (\(TaskLabel s) -> Map.lookup s ts') (requires t)
+            requiredTasks <- mapM (flip Map.lookup $ ts') (requires t)
             let ds' = Dependency t requiredTasks : ds
             return $ case label t of
-                Just (TaskLabel s) ->
-                    case s `Map.member` ts' of
+                Just l@(TaskLabel s) ->
+                    case l `Map.member` ts' of
                         True -> Plan (("Task label \"" ++ s ++ "\" is multiply defined") : es) ts' ds'
-                        False -> Plan es (Map.insert s t ts') ds'
+                        False -> Plan es (Map.insert l t ts') ds'
                 _ -> Plan es ts' ds')
         plan
         (tasks g)
