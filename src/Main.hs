@@ -127,6 +127,7 @@ data ScheduledTask = ScheduledTask
     , startDay :: Day
     , endDay :: Day
     }
+    deriving Show
 
 instance ToRecord ScheduledTask where
     toRecord (ScheduledTask t s e) =
@@ -197,7 +198,6 @@ resolveAvailability (Availability c ps) =
     in Calendar (Map.fromList (map (resolvePersonAvailability commonAbsentDays) ps))
     where caAbsentDays = absentDays :: CommonAvailability -> [Day]
 
-
 taskTitle :: Task -> String
 taskTitle = title :: Task -> String
 
@@ -237,6 +237,8 @@ runWithOpts opts = do
         orderedTasks = map ((flip unsafeLookUp) (flipMap is)) (topSort g)
 
     let result = schedule (peopleMap calendar) peopleDays orderedTasks
+
+    print result
 
     case fmt of
         CSV -> ByteString.writeFile p (Csv.encode result)
