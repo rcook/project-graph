@@ -15,7 +15,6 @@ import qualified Data.Csv as Csv (encode, record)
 import           Data.Foldable (foldlM, for_)
 import           Data.Graph (edges, vertices)
 import qualified Data.GraphViz as GraphViz (graphElemsToDot, printDotGraph, quickParams)
-import           Data.List (foldl')
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (empty, fromList, insert, lookup, mapWithKey, member)
 import           Data.Set (Set)
@@ -98,18 +97,13 @@ empty = Plan [] Map.empty []
 
 --
 
-foo :: TaskMap -> Task -> Dependency Task
-foo ts t = Dependency t (map (bar ts) (requires t))
-
-bar :: TaskMap -> TaskLabel -> Task
-bar ts (TaskLabel s) = unsafeLookUp s ts
-
-resolveGroup :: Plan -> Group -> Plan
+resolveGroup :: Plan -> Group -> Maybe Plan
 resolveGroup plan g =
-    foldl'
-        (\(Plan es ts' ds) t ->
-            let ds' = foo ts' t : ds
-            in case label t of
+    foldlM
+        (\(Plan es ts' ds) t -> do
+            requiredTasks <- mapM (\(TaskLabel s) -> Map.lookup s ts') (requires t)
+            let ds' = Dependency t requiredTasks : ds
+            return $ case label t of
                 Just (TaskLabel s) ->
                     case s `Map.member` ts' of
                         True -> Plan (("Task label \"" ++ s ++ "\" is multiply defined") : es) ts' ds'
@@ -118,8 +112,8 @@ resolveGroup plan g =
         plan
         (tasks g)
 
-plan :: Calendar -> Project -> Plan
-plan c s = foldl' resolveGroup empty s
+plan :: Calendar -> Project -> Maybe Plan
+plan c s = foldlM resolveGroup empty s
 
 type Schedule = [ScheduledTask]
 
@@ -227,7 +221,9 @@ runWithOpts opts = do
         peopleDays = Map.mapWithKey
                         (\_ absentDays -> nearestWorkdayOnOrAfter absentDays s)
                         (peopleMap calendar)
-        Plan ms _ ds = plan calendar project
+        Plan ms _ ds = case plan calendar project of
+                        Just x -> x
+                        _ -> error "Failed!"
 
     when (length ms > 0) $ do
         for_ ms putStrLn
