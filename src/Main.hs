@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main (main) where
 
@@ -21,7 +22,7 @@ import qualified Data.Set as Set (fromList, union)
 import           Data.String (IsString)
 import qualified Data.Text.Lazy.IO as Text (writeFile)
 import           Data.Time (Day)
-import           Data.Yaml (FromJSON, ToJSON, decodeFileThrow, encodeFile)
+import           Data.Yaml (FromJSON(..), ToJSON, (.:), (.:?), (.!=), decodeFileThrow, encodeFile, withObject)
 import           GHC.Generics (Generic)
 import           Options.Applicative (ReadM, argument, execParser, info, maybeReader, metavar, str)
 import           System.Exit (exitFailure, exitSuccess)
@@ -79,7 +80,17 @@ data Task = Task
     , owner :: Person
     , requires :: [TaskLabel]
     }
-    deriving (Eq, FromJSON, Generic, Ord, Show, ToJSON)
+    deriving (Eq, Generic, Ord, Show, ToJSON)
+
+instance FromJSON Task where
+    parseJSON = withObject "task" $ \o -> do
+        title <- o .: "title"
+        description <- o .:? "description"
+        label <- o .:? "label"
+        effort <- o .: "effort"
+        owner <- o .: "owner"
+        requires <- o .:? "requires" .!= []
+        return $ Task title description label effort owner requires
 
 -- Plan
 
@@ -255,7 +266,7 @@ runWithOpts opts = do
     case fmt of
         CSV -> ByteString.writeFile p (Csv.encode result)
         DOT -> do
-            let es = map (\(f, t) -> (f, t, "")) (edges g)
+            let es = map (\(f, t) -> (f, t, "" :: String)) (edges g)
                 dotGraph = GraphViz.graphElemsToDot
                     GraphViz.quickParams
                     (map (\(idx, task) -> (idx, taskLabelCompact task)) indexed)

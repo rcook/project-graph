@@ -4,7 +4,6 @@
     label: A
     effort: 1
     owner: foo
-    requires: []
   - title: Task B
     label: B
     effort: 2
@@ -18,7 +17,6 @@
     owner: foo
     requires: [B, E]
   - title: Task D
-    label: D
     effort: 1
     owner: foo
     requires: [C]
