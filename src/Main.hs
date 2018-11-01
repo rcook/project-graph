@@ -13,6 +13,7 @@ import qualified Data.Csv as Csv (encode, record)
 import           Data.Foldable (foldlM, for_)
 import           Data.Graph (edges, vertices)
 import qualified Data.GraphViz as GraphViz (graphElemsToDot, printDotGraph, quickParams)
+import           Data.List (foldl')
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (empty, fromList, insert, lookup, mapWithKey, member)
 import           Data.Set (Set)
@@ -95,23 +96,30 @@ empty = Plan [] Map.empty []
 
 --
 
-resolveGroup :: Plan -> Group -> Maybe Plan
+resolveGroup :: Plan -> Group -> Plan
 resolveGroup plan g =
-    foldlM
-        (\(Plan es ts' ds) t -> do
-            requiredTasks <- mapM (flip Map.lookup $ ts') (requires t)
-            let ds' = Dependency t requiredTasks : ds
-            return $ case label t of
+    foldl'
+        (\(Plan es tm ds) t ->
+            let (requiredTasks, ms) = foldl'
+                        (\(ts, ms) l@(TaskLabel s) ->
+                            case Map.lookup l tm of
+                                Just t -> (t : ts, ms)
+                                _ -> (ts, (printf "Could not find task \"%s\"" s) : ms))
+                        ([], [])
+                        (requires t)
+                ds' = Dependency t requiredTasks : ds
+                es' = ms ++ es
+            in case label t of
                 Just l@(TaskLabel s) ->
-                    case l `Map.member` ts' of
-                        True -> Plan (("Task label \"" ++ s ++ "\" is multiply defined") : es) ts' ds'
-                        False -> Plan es (Map.insert l t ts') ds'
-                _ -> Plan es ts' ds')
+                    case l `Map.member` tm of
+                        True -> Plan (("Task label \"" ++ s ++ "\" is multiply defined") : es') tm ds'
+                        False -> Plan es' (Map.insert l t tm) ds'
+                _ -> Plan es' tm ds')
         plan
         (tasks g)
 
-plan :: Calendar -> Project -> Maybe Plan
-plan c s = foldlM resolveGroup empty s
+plan :: Calendar -> Project -> Plan
+plan c = foldl' resolveGroup empty
 
 type Schedule = [ScheduledTask]
 
@@ -219,9 +227,7 @@ runWithOpts opts = do
         peopleDays = Map.mapWithKey
                         (\_ absentDays -> nearestWorkdayOnOrAfter absentDays s)
                         (peopleMap calendar)
-        Plan ms _ ds = case plan calendar project of
-                        Just x -> x
-                        _ -> error "Failed!"
+        Plan ms _ ds = plan calendar project
 
     when (length ms > 0) $ do
         for_ ms putStrLn
