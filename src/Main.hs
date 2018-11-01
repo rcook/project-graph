@@ -96,30 +96,42 @@ empty = Plan [] Map.empty []
 
 --
 
-resolveGroup :: Plan -> Group -> Plan
-resolveGroup plan g =
-    foldl'
-        (\(Plan es tm ds) t ->
-            let (requiredTasks, ms) = foldl'
-                        (\(ts, ms) l@(TaskLabel s) ->
-                            case Map.lookup l tm of
-                                Just t -> (t : ts, ms)
-                                _ -> (ts, (printf "Could not find task \"%s\"" s) : ms))
-                        ([], [])
-                        (requires t)
-                ds' = Dependency t requiredTasks : ds
-                es' = ms ++ es
-            in case label t of
-                Just l@(TaskLabel s) ->
-                    case l `Map.member` tm of
-                        True -> Plan (("Task label \"" ++ s ++ "\" is multiply defined") : es') tm ds'
-                        False -> Plan es' (Map.insert l t tm) ds'
-                _ -> Plan es' tm ds')
-        plan
-        (tasks g)
+plan :: Project -> Plan
+plan project =
+    let plan = resolveTasks project
+    in resolveRequires plan project
 
-plan :: Calendar -> Project -> Plan
-plan c = foldl' resolveGroup empty
+resolveTasks :: Project -> Plan
+resolveTasks project = foldl' go empty project
+    where go plan g =
+            foldl'
+                (\(Plan es tm ds) t ->
+                    case label t of
+                        Just l@(TaskLabel s) ->
+                            case l `Map.member` tm of
+                                True -> Plan (("Task label \"" ++ s ++ "\" is multiply defined") : es) tm ds
+                                False -> Plan es (Map.insert l t tm) ds
+                        _ -> Plan es tm ds)
+                plan
+                (tasks g)
+
+resolveRequires :: Plan -> Project -> Plan
+resolveRequires = foldl' go
+    where go plan g =
+            foldl'
+                (\(Plan es tm ds) t ->
+                    let (requiredTasks, ms) = foldl'
+                                (\(ts, ms) l@(TaskLabel s) ->
+                                    case Map.lookup l tm of
+                                        Just t -> (t : ts, ms)
+                                        _ -> (ts, (printf "Could not find task \"%s\"" s) : ms))
+                                ([], [])
+                                (requires t)
+                        ds' = Dependency t requiredTasks : ds
+                        es' = ms ++ es
+                    in Plan es' tm ds')
+                plan
+                (tasks g)
 
 type Schedule = [ScheduledTask]
 
@@ -227,7 +239,7 @@ runWithOpts opts = do
         peopleDays = Map.mapWithKey
                         (\_ absentDays -> nearestWorkdayOnOrAfter absentDays s)
                         (peopleMap calendar)
-        Plan ms _ ds = plan calendar project
+        Plan ms _ ds = plan project
 
     when (length ms > 0) $ do
         for_ ms putStrLn
