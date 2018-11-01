@@ -227,11 +227,8 @@ runWithOpts opts = do
         for_ ms putStrLn
         exitFailure
 
-    let is = leafIndices ds
-        g = dependencyGraph is ds
-        orderedTasks = map ((flip unsafeLookUp) (flipMap is)) (topSort g)
-
-    let result = case schedule (peopleMap calendar) peopleDays orderedTasks of
+    let (g, indexed) = graphAndOrder ds
+        result = case schedule (peopleMap calendar) peopleDays (map snd indexed) of
                 Right x -> x
                 Left s -> error s
 
@@ -240,11 +237,10 @@ runWithOpts opts = do
     case fmt of
         CSV -> ByteString.writeFile p (Csv.encode result)
         DOT -> do
-            let ns = map (\idx -> let task = (flip unsafeLookUp) (flipMap is) idx in (idx, taskLabelCompact task)) (vertices g)
-                es = map (\(f, t) -> (f, t, "")) (edges g)
+            let es = map (\(f, t) -> (f, t, "")) (edges g)
                 dotGraph = GraphViz.graphElemsToDot
                     GraphViz.quickParams
-                    ns
+                    (map (\(idx, task) -> (idx, taskLabelCompact task)) indexed)
                     es
             Text.writeFile p (GraphViz.printDotGraph dotGraph)
         Text -> withFile p WriteMode

@@ -1,10 +1,6 @@
 module ProjectGraph.TopSort
     ( Dependency(..)
-    , dependencyGraph
-    , flipMap
-    , leafIndices
-    , topSort
-    , unsafeLookUp
+    , graphAndOrder
     )
     where
 
@@ -35,3 +31,11 @@ dependencyGraph m deps =
                             deps
     in buildG (0, Map.size m - 1) edges
     where helper m = map ((flip unsafeLookUp) m)
+
+graphAndOrder :: Ord k => [Dependency k] -> (Graph, [(Int, k)])
+graphAndOrder ds =
+    let is = leafIndices ds
+        g = dependencyGraph is ds
+    in (g, map
+        (\idx -> (idx, (flip unsafeLookUp) (flipMap is) idx))
+        (topSort g))

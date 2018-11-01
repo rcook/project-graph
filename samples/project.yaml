@@ -16,6 +16,7 @@
     label: C
     effort: 1
     owner: foo
+    #requires: [B, E]
     requires: [B]
   - title: Task D
     label: D
