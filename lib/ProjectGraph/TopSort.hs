@@ -4,11 +4,10 @@ module ProjectGraph.TopSort
     )
     where
 
-import           Data.Graph
+import           Data.Graph (Graph, buildG, topSort)
 import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
+import qualified Data.Map.Strict as Map (empty, fromList, insert, lookup, member, size, toList)
 import           Data.Set (Set)
-import qualified Data.Set as Set
 
 data Dependency k = Dependency k [k]
 
