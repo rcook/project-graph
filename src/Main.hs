@@ -8,6 +8,7 @@ module Main (main) where
 import           Control.Error.Util (note)
 import           Control.Monad (when)
 import qualified Data.ByteString.Lazy as ByteString (writeFile)
+import qualified Data.ByteString.Lazy.Char8 as Char8 (putStrLn)
 import           Data.Char (toLower)
 import           Data.Csv (ToField(..), ToRecord(..))
 import qualified Data.Csv as Csv (encode, record)
@@ -24,7 +25,7 @@ import qualified Data.Text.Lazy.IO as Text (writeFile)
 import           Data.Time (Day)
 import           Data.Yaml (FromJSON(..), ToJSON, (.:), (.:?), (.!=), decodeFileThrow, encodeFile, withObject)
 import           GHC.Generics (Generic)
-import           Options.Applicative (ReadM, argument, execParser, info, maybeReader, metavar, str)
+import           Options.Applicative (ReadM, argument, execParser, info, long, maybeReader, metavar, optional, short, str, strOption)
 import           System.Exit (exitFailure, exitSuccess)
 import           System.FilePath (takeExtension)
 import           System.IO (IOMode(..), hPutStrLn, withFile)
@@ -36,15 +37,21 @@ import ProjectGraph.TopSort
 
 type PeopleDays = Map Person Day
 
-data OutputFormat = CSV | DOT | Text
+data OutputTarget =
+    CSV FilePath
+    | DOT FilePath
+    | PlainText FilePath
+    | StandardOutput
 
-outputFormat :: FilePath -> Maybe OutputFormat
-outputFormat p =
-    case map toLower (takeExtension p) of
-        ".csv" -> Just CSV
-        ".dot" -> Just DOT
-        ".txt" -> Just Text
+outputTarget :: Maybe FilePath -> Maybe OutputTarget
+outputTarget (Just path) =
+    case map toLower (takeExtension path) of
+        ".csv" -> Just $ CSV path
+        ".dot" -> Just $ DOT path
+        ".gv" -> Just $ DOT path
+        ".txt" -> Just $ PlainText path
         _ -> Nothing
+outputTarget Nothing = Just StandardOutput
 
 -- Command-line options
 
@@ -52,7 +59,7 @@ data Options = Options
     { projectPath :: FilePath
     , availabilityPath :: FilePath
     , startDate :: Day
-    , outputPath :: FilePath
+    , outputPath :: Maybe FilePath
     }
 
 -- YAML serialization
@@ -194,7 +201,7 @@ main = execParser opts >>= runWithOpts
             <$> argument str (metavar "PROJECTPATH")
             <*> argument str (metavar "AVAILABILITYPATH")
             <*> argument (maybeReader parseDate) (metavar "STARTDATE")
-            <*> argument str (metavar "OUTPUTPATH")
+            <*> (optional $ strOption (long "output" <> short 'o' <> metavar "OUTPUTPATH"))
         opts = info parser mempty
 
 data CommonAvailability = CommonAvailability
@@ -259,10 +266,9 @@ taskLabelCompact task =
 
 runWithOpts :: Options -> IO ()
 runWithOpts opts = do
-    let p = outputPath opts
-        fmt = case outputFormat p of
-                Just x -> x
-                _ -> error "Unsupported output format"
+    let target = case outputTarget (outputPath opts) of
+                    Just x -> x
+                    _ -> error "Unsupported output format"
 
     availability <- decodeFileThrow (availabilityPath opts)
 
@@ -287,16 +293,16 @@ runWithOpts opts = do
 
     print result
 
-    case fmt of
-        CSV -> ByteString.writeFile p (Csv.encode result)
-        DOT -> do
+    case target of
+        CSV path -> ByteString.writeFile path $ Csv.encode result
+        DOT path -> do
             let es = map (\(f, t) -> (f, t, "" :: String)) (edges g)
                 dotGraph = GraphViz.graphElemsToDot
                     GraphViz.quickParams
                     (map (\(idx, task) -> (idx, taskLabelCompact task)) indexed)
                     es
-            Text.writeFile p (GraphViz.printDotGraph dotGraph)
-        Text -> withFile p WriteMode
+            Text.writeFile path (GraphViz.printDotGraph dotGraph)
+        PlainText path -> withFile path WriteMode
                     (\h -> for_ result $ \scheduledTask -> do
                                 let t = task scheduledTask
                                     s = startDay scheduledTask
@@ -307,3 +313,4 @@ runWithOpts opts = do
                                                 (let Person s = owner t in s)
                                                 (show s)
                                                 (show e))
+        StandardOutput -> Char8.putStrLn $ Csv.encode result
