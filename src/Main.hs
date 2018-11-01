@@ -70,7 +70,14 @@ data Group = Group
     , description :: Maybe String
     , tasks :: [Task]
     }
-    deriving (Eq, FromJSON, Generic, Show, ToJSON)
+    deriving (Eq, Generic, Show, ToJSON)
+
+instance FromJSON Group where
+    parseJSON = withObject "group" $ \o -> do
+        title <- o .: "title"
+        description <- o .:? "description"
+        tasks <- o .:? "tasks" .!= []
+        return $ Group title description tasks
 
 data Task = Task
     { title :: String
@@ -193,19 +200,36 @@ main = execParser opts >>= runWithOpts
 data CommonAvailability = CommonAvailability
     { absentDays :: [Day]
     }
-    deriving (FromJSON, Generic, Show, ToJSON)
+    deriving (Generic, Show, ToJSON)
+
+instance FromJSON CommonAvailability where
+    parseJSON = withObject "commonAvailability" $ \o -> do
+        absentDays <- o .:? "absentDays" .!= []
+        return $ CommonAvailability absentDays
 
 data PersonAvailability = PersonAvailability
     { person :: Person
     , absentDays :: [Day]
     }
-    deriving (FromJSON, Generic, Show, ToJSON)
+    deriving (Generic, Show, ToJSON)
+
+instance FromJSON PersonAvailability where
+    parseJSON = withObject "personAvailability" $ \o -> do
+        person <- o .: "person"
+        absentDays <- o .:? "absentDays" .!= []
+        return $ PersonAvailability person absentDays
 
 data Availability = Availability
     { common :: CommonAvailability
     , people :: [PersonAvailability]
     }
-    deriving (FromJSON, Generic, Show, ToJSON)
+    deriving (Generic, Show, ToJSON)
+
+instance FromJSON Availability where
+    parseJSON = withObject "availability" $ \o -> do
+        common <- o .:? "common" .!= CommonAvailability []
+        people <- o .:? "people" .!= []
+        return $ Availability common people
 
 data Calendar = Calendar
     { peopleMap :: Map Person AbsentDays
