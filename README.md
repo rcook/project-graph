@@ -25,7 +25,7 @@ stack build --fast
 Here's a sample command line:
 
 ```bash
-stack exec project-graph samples/project.yaml samples/availability.yaml 2018-10-29 output.csv
+stack exec project-graph samples/project.yaml samples/availability.yaml 2018-10-29 --output output.csv
 ```
 
 Notes:
