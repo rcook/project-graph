@@ -11,7 +11,7 @@
     requires: [A]
 - title: Group 2
   tasks:
-  - title: Task C
+  - title: This task has a way longer title than all the others
     label: C
     effort: 1
     owner: foo
