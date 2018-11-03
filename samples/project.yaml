@@ -4,6 +4,7 @@
     label: A
     effort: 1
     owner: foo
+    requires: [L7]
   - title: Task B
     label: B
     effort: 2
@@ -28,7 +29,21 @@
 - title: Group 3
   tasks:
   - title: A
+    label: L0
   - title: B
+    label: L1
   - title: C
+    label: L2
   - title: D
+    label: L3
   - title: E
+    label: L4
+  - title: F
+    label: L5
+    requires: [L0, L1, L2, L3, L4]
+  - title: G
+    label: L6
+    requires: [L0, L5]
+  - title: H
+    label: L7
+    requires: [L1, L5, L6]

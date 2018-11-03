@@ -2,6 +2,21 @@
 
 _A simple graph-based project-scheduling tool_
 
+## Install prerequisites
+
+### Ubuntu
+
+```bash
+sudo apt install \
+  libatk1.0-dev \
+  libcairo2-dev \
+  libgdk-pixbuf2.0 \
+  libgirepository1.0-dev \
+  libglib2.0-dev \
+  libgtk-3-dev \
+  libpango1.0-dev \
+  pkg-config
+
 ## Use ghcid for iterative development
 
 ```bash

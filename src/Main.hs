@@ -44,6 +44,7 @@ import           System.IO (IOMode(..), hPutStrLn, withFile)
 import           Text.Printf (printf)
 import           Text.Read (readMaybe)
 
+import GUI (display)
 import ProjectGraph.DateUtil
 import ProjectGraph.TopSort
 
@@ -53,7 +54,7 @@ data OutputTarget =
     CSV FilePath
     | DOT FilePath
     | PlainText FilePath
-    | StandardOutput
+    | GUI
 
 outputTarget :: Maybe FilePath -> Maybe OutputTarget
 outputTarget (Just path) =
@@ -63,7 +64,7 @@ outputTarget (Just path) =
         ".gv" -> Just $ DOT path
         ".txt" -> Just $ PlainText path
         _ -> Nothing
-outputTarget Nothing = Just StandardOutput
+outputTarget Nothing = Just GUI
 
 -- Command-line options
 
@@ -336,4 +337,11 @@ runWithOpts opts = do
                                                 (show $ unPerson <$> owner t)
                                                 (show s)
                                                 (show e))
-        StandardOutput -> Char8.putStrLn $ Csv.encode result
+        GUI -> do
+            Char8.putStrLn $ Csv.encode result
+            let es = map (\(f, t) -> (f, t, "" :: String)) (edges g)
+                dotGraph = GraphViz.graphElemsToDot
+                    GraphViz.quickParams
+                    (map (\(idx, task) -> (idx, taskLabelCompact task)) indexed)
+                    es
+            display dotGraph
