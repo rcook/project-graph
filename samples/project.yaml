@@ -25,3 +25,10 @@
     effort: 1
     owner: foo
     requires: [A]
+- title: Group 3
+  tasks:
+  - title: A
+  - title: B
+  - title: C
+  - title: D
+  - title: E

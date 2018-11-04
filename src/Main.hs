@@ -15,15 +15,27 @@ import qualified Data.Csv as Csv (encode, record)
 import           Data.Foldable (foldlM, for_)
 import           Data.Graph (edges, vertices)
 import qualified Data.GraphViz as GraphViz (graphElemsToDot, printDotGraph, quickParams)
-import           Data.List (foldl')
+import           Data.List (foldl', intercalate)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (empty, fromList, insert, lookup, mapWithKey, member)
+import           Data.Maybe (catMaybes, fromMaybe)
 import           Data.Set (Set)
 import qualified Data.Set as Set (fromList, union)
 import           Data.String (IsString)
+import qualified Data.Text as Text (unpack)
 import qualified Data.Text.Lazy.IO as Text (writeFile)
 import           Data.Time (Day)
-import           Data.Yaml (FromJSON(..), ToJSON, (.:), (.:?), (.!=), decodeFileThrow, encodeFile, withObject)
+import           Data.Yaml
+                    ( FromJSON(..)
+                    , ToJSON(..)
+                    , (.:)
+                    , (.:?)
+                    , (.!=)
+                    , decodeFileThrow
+                    , encodeFile
+                    , withObject
+                    , withText
+                    )
 import           GHC.Generics (Generic)
 import           Options.Applicative (ReadM, argument, execParser, info, long, maybeReader, metavar, optional, short, str, strOption)
 import           System.Exit (exitFailure, exitSuccess)
@@ -70,7 +82,16 @@ type Days = Int
 
 newtype TaskLabel = TaskLabel String deriving (Eq, FromJSON, Generic, Ord, Show, ToJSON)
 
-newtype Person = Person String deriving (Eq, FromJSON, Generic, Ord, Show, ToJSON)
+newtype Person = Person
+    { unPerson :: String
+    }
+    deriving (Eq, Generic, Ord, Show)
+
+instance FromJSON Person where
+    parseJSON = withText "person" $ \s -> return $ Person (Text.unpack s)
+
+instance ToJSON Person where
+    toJSON (Person s) = toJSON s
 
 data Group = Group
     { title :: String
@@ -90,8 +111,8 @@ data Task = Task
     { title :: String
     , description :: Maybe String
     , label :: Maybe TaskLabel
-    , effort :: Days
-    , owner :: Person
+    , effort :: Maybe Days
+    , owner :: Maybe Person
     , requires :: [TaskLabel]
     }
     deriving (Eq, Generic, Ord, Show, ToJSON)
@@ -101,8 +122,8 @@ instance FromJSON Task where
         title <- o .: "title"
         description <- o .:? "description"
         label <- o .:? "label"
-        effort <- o .: "effort"
-        owner <- o .: "owner"
+        effort <- o .:? "effort"
+        owner <- o .:? "owner"
         requires <- o .:? "requires" .!= []
         return $ Task title description label effort owner requires
 
@@ -170,11 +191,11 @@ data ScheduledTask = ScheduledTask
 instance ToRecord ScheduledTask where
     toRecord (ScheduledTask t s e) =
         Csv.record
-            [ toField (tTitle t)
-            , toField (effort t)
-            , let Person s = owner t in toField s
-            , toField (show s)
-            , toField (show e)
+            [ toField $ tTitle t
+            , toField $ effort t
+            , toField $ unPerson <$> owner t
+            , toField $ show s
+            , toField $ show e
             ]
         where tTitle = title :: Task -> String
 
@@ -182,14 +203,16 @@ schedule :: Map Person AbsentDays -> PeopleDays -> [Task] -> Either String Sched
 schedule peopleMap peopleDays tasks = do
     (_, result) <- foldlM
                         (\(peopleDays', sts) t -> do
-                            let o@(Person s) = owner t
-                                eff = effort t
-                            startDay <- note ("Could not find person " ++ s) $ Map.lookup o peopleDays'
-                            absentDays <- note ("Could not find person " ++ s) $ Map.lookup o peopleMap
-                            let endDay = addWorkdays absentDays (eff - 1) startDay
-                                nextDay = addWorkdays absentDays 1 endDay
-                                peopleDays'' = Map.insert o nextDay peopleDays'
-                            return (peopleDays'', sts ++ [ScheduledTask t startDay endDay])) -- ICK
+                            case (effort t, owner t) of
+                                (Just eff, Just o) -> do
+                                    let s = unPerson o
+                                    startDay <- note ("Could not find person " ++ s) $ Map.lookup o peopleDays'
+                                    absentDays <- note ("Could not find person " ++ s) $ Map.lookup o peopleMap
+                                    let endDay = addWorkdays absentDays (eff - 1) startDay
+                                        nextDay = addWorkdays absentDays 1 endDay
+                                        peopleDays'' = Map.insert o nextDay peopleDays'
+                                    return (peopleDays'', sts ++ [ScheduledTask t startDay endDay])
+                                _ -> return (peopleDays', sts))
                         (peopleDays, [])
                         tasks
     return result
@@ -257,12 +280,12 @@ taskTitle :: Task -> String
 taskTitle = title :: Task -> String
 
 taskLabelCompact :: Task -> String
-taskLabelCompact task =
-    printf
-        "%s\n%s\neffort: %d"
-        (taskTitle task)
-        (let Person s = owner task in s)
-        (effort task)
+taskLabelCompact t =
+    intercalate "\n" $ catMaybes
+                        [ Just $ taskTitle t
+                        , unPerson <$> owner t
+                        , show <$> effort t
+                        ]
 
 runWithOpts :: Options -> IO ()
 runWithOpts opts = do
@@ -307,10 +330,10 @@ runWithOpts opts = do
                                 let t = task scheduledTask
                                     s = startDay scheduledTask
                                     e = endDay scheduledTask
-                                hPutStrLn h $ printf "task: %s, effort: %d days, owner: %s, startDay: %s, endDay: %s"
+                                hPutStrLn h $ printf "task: %s, effort: %s days, owner: %s, startDay: %s, endDay: %s"
                                                 (taskTitle t)
-                                                (effort t)
-                                                (let Person s = owner t in s)
+                                                (show $ effort t)
+                                                (show $ unPerson <$> owner t)
                                                 (show s)
                                                 (show e))
         StandardOutput -> Char8.putStrLn $ Csv.encode result
