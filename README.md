@@ -16,6 +16,7 @@ sudo apt install \
   libgtk-3-dev \
   libpango1.0-dev \
   pkg-config
+```
 
 ## Use ghcid for iterative development
 
