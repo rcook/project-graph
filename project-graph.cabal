@@ -35,20 +35,29 @@ library
   default-language:       Haskell2010
   ghc-options:            -fwarn-unused-imports
   hs-source-dirs:         lib
-  exposed-modules:        ProjectGraph.GUI
+  exposed-modules:        ProjectGraph.App
+                        , ProjectGraph.DataFiles
+                        , ProjectGraph.GTK3Test
+                        , ProjectGraph.GUI
                         , ProjectGraph.Planning
                         , ProjectGraph.Scheduling
                         , ProjectGraph.Schema
                         , ProjectGraph.TopSort
                         , ProjectGraph.Workday
   build-depends:          base >= 4.7 && < 5
+                        , bytestring
                         , cairo
                         , containers
+                        , file-embed
                         , graphviz
                         , gtk3
                         , split
+                        , template-haskell
+                        , temporary
                         , text
                         , time
                         , transformers
                         , xdot
                         , yaml
+  if os(osx)
+    build-depends:        gtk3-mac-integration

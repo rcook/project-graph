@@ -2,4 +2,5 @@ resolver: lts-12.16
 packages: [.]
 allow-newer: true
 extra-deps:
+- gtk3-mac-integration-0.3.4.0
 - xdot-0.3.0.1

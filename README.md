@@ -18,6 +18,12 @@ sudo apt install \
   pkg-config
 ```
 
+### macOS
+
+```bash
+brew install gtk-mac-integration
+```
+
 ## Use ghcid for iterative development
 
 ```bash
