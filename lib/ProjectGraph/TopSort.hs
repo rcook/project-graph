@@ -7,7 +7,6 @@ module ProjectGraph.TopSort
 import           Data.Graph (Graph, buildG, topSort)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (empty, fromList, insert, lookup, member, size, toList)
-import           Data.Set (Set)
 
 data Dependency k = Dependency k [k]
 

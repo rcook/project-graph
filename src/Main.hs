@@ -13,16 +13,13 @@ import           Data.Char (toLower)
 import           Data.Csv (ToField(..), ToRecord(..))
 import qualified Data.Csv as Csv (encode, record)
 import           Data.Foldable (foldlM, for_)
-import           Data.Graph (edges, vertices)
+import           Data.Graph (edges)
 import qualified Data.GraphViz as GraphViz (graphElemsToDot, printDotGraph, quickParams)
 import           Data.List (foldl', intercalate)
 import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map (empty, fromList, insert, lookup, mapWithKey, member)
-import           Data.Maybe (catMaybes, fromMaybe)
-import           Data.Set (Set)
+import qualified Data.Map.Strict as Map (fromList, insert, lookup, mapWithKey, member)
+import           Data.Maybe (catMaybes)
 import qualified Data.Set as Set (fromList, union)
-import           Data.String (IsString)
-import qualified Data.Text as Text (unpack)
 import qualified Data.Text.Lazy.IO as Text (writeFile)
 import           Data.Time (Day)
 import           Data.Yaml
@@ -32,21 +29,24 @@ import           Data.Yaml
                     , (.:?)
                     , (.!=)
                     , decodeFileThrow
-                    , encodeFile
                     , withObject
-                    , withText
                     )
 import           GHC.Generics (Generic)
-import           Options.Applicative (ReadM, argument, execParser, info, long, maybeReader, metavar, optional, short, str, strOption)
-import           System.Exit (exitFailure, exitSuccess)
+import           Options.Applicative (argument, execParser, info, long, maybeReader, metavar, optional, short, str, strOption)
+import           ProjectGraph.GUI (display)
+import           ProjectGraph.Planning (Plan(..), emptyPlan)
+import           ProjectGraph.Schema (Label(..), Person(..), Task(..))
+import           ProjectGraph.TopSort (Dependency(..), graphAndOrder)
+import           ProjectGraph.Workday
+                    ( AbsentDays
+                    , addWorkdays
+                    , nearestWorkdayOnOrAfter
+                    , parseDate
+                    )
+import           System.Exit (exitFailure)
 import           System.FilePath (takeExtension)
 import           System.IO (IOMode(..), hPutStrLn, withFile)
 import           Text.Printf (printf)
-import           Text.Read (readMaybe)
-
-import GUI (display)
-import ProjectGraph.DateUtil
-import ProjectGraph.TopSort
 
 type PeopleDays = Map Person Day
 
@@ -79,21 +79,6 @@ data Options = Options
 
 type Project = [Group]
 
-type Days = Int
-
-newtype TaskLabel = TaskLabel String deriving (Eq, FromJSON, Generic, Ord, Show, ToJSON)
-
-newtype Person = Person
-    { unPerson :: String
-    }
-    deriving (Eq, Generic, Ord, Show)
-
-instance FromJSON Person where
-    parseJSON = withText "person" $ \s -> return $ Person (Text.unpack s)
-
-instance ToJSON Person where
-    toJSON (Person s) = toJSON s
-
 data Group = Group
     { title :: String
     , description :: Maybe String
@@ -108,40 +93,8 @@ instance FromJSON Group where
         tasks <- o .:? "tasks" .!= []
         return $ Group title description tasks
 
-data Task = Task
-    { title :: String
-    , description :: Maybe String
-    , label :: Maybe TaskLabel
-    , effort :: Maybe Days
-    , owner :: Maybe Person
-    , requires :: [TaskLabel]
-    }
-    deriving (Eq, Generic, Ord, Show, ToJSON)
-
-instance FromJSON Task where
-    parseJSON = withObject "task" $ \o -> do
-        title <- o .: "title"
-        description <- o .:? "description"
-        label <- o .:? "label"
-        effort <- o .:? "effort"
-        owner <- o .:? "owner"
-        requires <- o .:? "requires" .!= []
-        return $ Task title description label effort owner requires
 
 -- Plan
-
-type TaskMap = Map TaskLabel Task
-
-data Plan = Plan
-    { messages :: [String]
-    , taskMap :: TaskMap
-    , deps :: [Dependency Task]
-    }
-
-empty :: Plan
-empty = Plan [] Map.empty []
-
---
 
 plan :: Project -> Plan
 plan project =
@@ -149,12 +102,12 @@ plan project =
     in resolveRequires plan project
 
 resolveTasks :: Project -> Plan
-resolveTasks project = foldl' go empty project
+resolveTasks project = foldl' go emptyPlan project
     where go plan g =
             foldl'
                 (\(Plan es tm ds) t ->
                     case label t of
-                        Just l@(TaskLabel s) ->
+                        Just l@(Label s) ->
                             case l `Map.member` tm of
                                 True -> Plan (("Task label \"" ++ s ++ "\" is multiply defined") : es) tm ds
                                 False -> Plan es (Map.insert l t tm) ds
@@ -168,7 +121,7 @@ resolveRequires = foldl' go
             foldl'
                 (\(Plan es tm ds) t ->
                     let (requiredTasks, ms) = foldl'
-                                (\(ts, ms) l@(TaskLabel s) ->
+                                (\(ts, ms) l@(Label s) ->
                                     case Map.lookup l tm of
                                         Just t -> (t : ts, ms)
                                         _ -> (ts, (printf "Could not find task \"%s\"" s) : ms))

@@ -1,6 +1,4 @@
-{-# OPTIONS_GHC -fwarn-unused-imports #-}
-
-module GUI (display) where
+module ProjectGraph.GUI (display) where
 
 import           Control.Monad (unless, when)
 import           Control.Monad.Trans.Class (MonadTrans(..))

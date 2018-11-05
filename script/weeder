@@ -5,7 +5,4 @@ this_dir=$(cd $(dirname $0); pwd -P)
 repo_dir=$(dirname $this_dir)
 
 cd $repo_dir
-stack build --fast
-stack build intero
-stack build --copy-compiler-tool ghcid
-stack build weeder
+stack exec -- weeder . --build

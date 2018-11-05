@@ -1,4 +1,4 @@
-module ProjectGraph.DateUtil
+module ProjectGraph.Workday
     ( AbsentDays
     , addWorkdays
     , parseDate
