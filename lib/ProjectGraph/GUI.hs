@@ -20,17 +20,13 @@ import           Graphics.UI.Gtk
                     , EventMask(..)
                     , MouseButton(..)
                     , WidgetClass
-                    , buttonLabel
-                    , buttonNew
                     , buttonPressEvent
                     , containerAdd
-                    , containerChild
                     , draw
                     , drawingAreaNew
                     , eventButton
                     , eventClick
                     , eventCoordinates
-                    , initGUI
                     , mainGUI
                     , mainQuit
                     , motionNotifyEvent
@@ -47,12 +43,10 @@ import           Graphics.UI.Gtk
                     , windowNew
                     , windowTitle
                     )
-import           Graphics.UI.Gtk.Windows.Window (windowSetDefaultSize)
 import           Graphics.XDot.Parser (getOperations, getSize)
 import           Graphics.XDot.Types (Object(..), Operation, Point, Rectangle)
 import           Graphics.XDot.Viewer (drawAll)
 import           ProjectGraph.App (appTitle, initApp)
-import           System.Exit (exitSuccess)
 
 data State = State
     { objects :: ([(Object String, Operation)], Rectangle)
@@ -88,7 +82,10 @@ display dg = do
         mainQuit
         return ()
 
+    {-
     button <- buttonNew
+    containerAdd window button
+
     set button
         [ buttonLabel := "Close"
         ]
@@ -97,26 +94,12 @@ display dg = do
         putStrLn "Quit app"
         mainQuit
         return True
-
-    containerAdd window button
-
-    widgetShowAll window
-
-    mainGUI
-
-    exitSuccess
-    initGUI
-
-    window <- windowNew
-    windowSetDefaultSize window 512 512
+    -}
 
     canvas <- drawingAreaNew
-    widgetAddEvents canvas [PointerMotionMask]
+    containerAdd window canvas
 
-    set window
-        [ windowTitle := "project-graph"
-        , containerChild := canvas
-        ]
+    widgetAddEvents canvas [ PointerMotionMask ]
 
     on canvas draw $
         redraw canvas state
