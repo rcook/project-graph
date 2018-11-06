@@ -11,8 +11,10 @@ import qualified Graphics.UI.Gtk.OSX as OSX
                     , applicationSetDockIconPixbuf
                     , applicationSetMenuBar
                     )
-import           ProjectGraph.DataFiles (loadIcon)
+#else
+import qualified Graphics.UI.Gtk.Windows.Window as Window (windowSetDefaultIcon)
 #endif
+import           ProjectGraph.DataFiles (loadIcon)
 
 #if defined(darwin_HOST_OS)
 
@@ -28,6 +30,8 @@ initApp = do
 #else
 
 initApp :: IO ()
-initApp = return ()
+initApp = do
+    icon <- $loadIcon
+    Window.windowSetDefaultIcon (Just icon)
 
 #endif
