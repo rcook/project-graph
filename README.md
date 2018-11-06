@@ -1,8 +1,16 @@
-# ProjectGraph
+# Project Graph
 
 _A simple graph-based project-scheduling tool_
 
+![Project Graph running on macOS](/docs/macos.png)
+
 ## Install prerequisites
+
+### Notes
+
+* Project Graph is written in Haskell
+* It uses [GTK3][gtk3]
+* And [Graphviz][graphviz]
 
 ### Ubuntu
 
@@ -70,10 +78,6 @@ Task D,1,foo,2018-11-07,2018-11-07
 
 The tool currently supports output in plain text, CSV and GraphViz (DOT) formats.
 
-## Screenshot
-
-![Project Graph running on macOS](/docs/macos.png)
-
 ## Licence
 
 Released under [MIT License][licence]
@@ -81,5 +85,7 @@ Released under [MIT License][licence]
 Copyright &copy; 2018, Richard Cook. All rights reserved.
 
 [availability-yaml]: samples/availability.yaml
+[graphviz]: https://www.graphviz.org/
+[gtk3]: https://developer.gnome.org/gtk3/stable/
 [licence]: LICENSE
 [project-yaml]: samples/project.yaml
