@@ -7,29 +7,29 @@ import           Graphics.UI.Gtk
                     , buttonNew
                     , buttonPressEvent
                     , containerAdd
-                    , initGUI
                     , mainGUI
                     , mainQuit
                     , objectDestroy
                     , on
                     , set
                     , widgetShowAll
+                    , windowDefaultHeight
+                    , windowDefaultWidth
                     , windowNew
-                    , windowSetDefaultSize
                     , windowTitle
                     )
 import           ProjectGraph.App (initApp)
 
 display :: IO ()
 display = do
-    initGUI
-
     initApp
 
     window <- windowNew
 
     set window
-        [ windowTitle := "Project Graph"
+        [ windowDefaultHeight := 512
+        , windowDefaultWidth := 512
+        , windowTitle := "Project Graph"
         ]
 
     on window objectDestroy $ do
@@ -47,8 +47,6 @@ display = do
         return True
 
     containerAdd window button
-
-    windowSetDefaultSize window 512 512
 
     widgetShowAll window
 
