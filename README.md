@@ -70,6 +70,10 @@ Task D,1,foo,2018-11-07,2018-11-07
 
 The tool currently supports output in plain text, CSV and GraphViz (DOT) formats.
 
+## Screenshot
+
+![Project Graph running on macOS](/docs/macos.png)
+
 ## Licence
 
 Released under [MIT License][licence]
