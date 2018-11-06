@@ -37,7 +37,6 @@ library
   hs-source-dirs:         lib
   exposed-modules:        ProjectGraph.App
                         , ProjectGraph.DataFiles
-                        , ProjectGraph.GTK3Test
                         , ProjectGraph.GUI
                         , ProjectGraph.Planning
                         , ProjectGraph.Scheduling

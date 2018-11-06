@@ -20,7 +20,10 @@ import           Graphics.UI.Gtk
                     , EventMask(..)
                     , MouseButton(..)
                     , WidgetClass
+                    , buttonLabel
+                    , buttonNew
                     , buttonPressEvent
+                    , containerAdd
                     , containerChild
                     , draw
                     , drawingAreaNew
@@ -39,6 +42,8 @@ import           Graphics.UI.Gtk
                     , widgetGetAllocatedWidth
                     , widgetQueueDraw
                     , widgetShowAll
+                    , windowDefaultHeight
+                    , windowDefaultWidth
                     , windowNew
                     , windowTitle
                     )
@@ -46,6 +51,8 @@ import           Graphics.UI.Gtk.Windows.Window (windowSetDefaultSize)
 import           Graphics.XDot.Parser (getOperations, getSize)
 import           Graphics.XDot.Types (Object(..), Operation, Point, Rectangle)
 import           Graphics.XDot.Viewer (drawAll)
+import           ProjectGraph.App (initApp)
+import           System.Exit (exitSuccess)
 
 data State = State
     { objects :: ([(Object String, Operation)], Rectangle)
@@ -67,6 +74,36 @@ display dg = do
 
     state <- newIORef $ State objs [] (0, 0) None
 
+    initApp
+
+    window <- windowNew
+
+    set window
+        [ windowDefaultHeight := 512
+        , windowDefaultWidth := 512
+        , windowTitle := "Project Graph"
+        ]
+
+    on window objectDestroy $ do
+        mainQuit
+        return ()
+
+    button <- buttonNew
+    set button
+        [ buttonLabel := "Close"
+        ]
+
+    on button buttonPressEvent $ lift $ do
+        putStrLn "Quit app"
+        mainQuit
+        return True
+
+    containerAdd window button
+
+    widgetShowAll window
+
+    mainGUI
+    exitSuccess
     initGUI
 
     window <- windowNew

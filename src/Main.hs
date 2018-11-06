@@ -33,8 +33,7 @@ import           Data.Yaml
                     )
 import           GHC.Generics (Generic)
 import           Options.Applicative (argument, execParser, info, long, maybeReader, metavar, optional, short, str, strOption)
---import           ProjectGraph.GUI (display)
-import           ProjectGraph.GTK3Test (display)
+import           ProjectGraph.GUI (display)
 import           ProjectGraph.Planning (Plan(..), emptyPlan)
 import           ProjectGraph.Schema (Label(..), Person(..), Task(..))
 import           ProjectGraph.TopSort (Dependency(..), graphAndOrder)
@@ -298,5 +297,4 @@ runWithOpts opts = do
                     GraphViz.quickParams
                     (map (\(idx, task) -> (idx, taskLabelCompact task)) indexed)
                     es
-            --display dotGraph
-            display
+            display dotGraph
