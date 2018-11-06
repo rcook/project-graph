@@ -4,8 +4,13 @@
 module ProjectGraph.App (initApp) where
 
 #if defined(darwin_HOST_OS)
-import qualified Graphics.UI.Gtk as Gtk
+import qualified Graphics.UI.Gtk as Gtk (menuBarNew)
 import qualified Graphics.UI.Gtk.OSX as OSX
+                    ( applicationNew
+                    , applicationReady
+                    , applicationSetDockIconPixbuf
+                    , applicationSetMenuBar
+                    )
 import           ProjectGraph.DataFiles (loadIcon)
 #endif
 
@@ -13,12 +18,12 @@ import           ProjectGraph.DataFiles (loadIcon)
 
 initApp :: IO ()
 initApp = do
-  app <- OSX.applicationNew
-  menuBar <- Gtk.menuBarNew
-  icon <- $loadIcon
-  OSX.applicationSetMenuBar app menuBar
-  OSX.applicationSetDockIconPixbuf app (Just icon)
-  OSX.applicationReady app
+    app <- OSX.applicationNew
+    menuBar <- Gtk.menuBarNew
+    OSX.applicationSetMenuBar app menuBar
+    icon <- $loadIcon
+    OSX.applicationSetDockIconPixbuf app (Just icon)
+    OSX.applicationReady app
 
 #else
 
