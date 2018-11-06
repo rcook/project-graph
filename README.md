@@ -4,6 +4,12 @@ _A simple graph-based project-scheduling tool_
 
 ![Project Graph running on macOS](/docs/macos.png)
 
+Example output produced using:
+
+```bash
+stack build --fast --exec 'project-graph samples/project.yaml samples/availability.yaml 2018-11-02'
+```
+
 ## Install prerequisites
 
 ### Notes
