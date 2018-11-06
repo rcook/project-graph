@@ -21,7 +21,9 @@ sudo apt install \
 ### macOS
 
 ```bash
-brew install gtk-mac-integration
+brew install \
+  gtk+3 \
+  gtk-mac-integration
 ```
 
 ## Use ghcid for iterative development
