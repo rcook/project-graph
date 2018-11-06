@@ -14,9 +14,13 @@ stack build --fast --exec 'project-graph samples/project.yaml samples/availabili
 
 ### Notes
 
-* Project Graph is written in Haskell
-* It uses [GTK3][gtk3]
+* Project Graph is written in [Haskell][haskell-dot-org]
+* I use [Stack][haskell-stack] to build it
+* It uses [GTK+ 3][gtk3]
 * And [Graphviz][graphviz]
+* It's been tested on the following platforms:
+  * macOS
+  * Ubuntu 18.04
 
 ### Ubuntu
 
@@ -82,7 +86,7 @@ Task C,1,foo,2018-11-06,2018-11-06
 Task D,1,foo,2018-11-07,2018-11-07
 ```
 
-The tool currently supports output in plain text, CSV and GraphViz (DOT) formats.
+The tool currently supports output in plain text, CSV and Graphviz (DOT) formats.
 
 ## Licence
 
@@ -93,5 +97,7 @@ Copyright &copy; 2018, Richard Cook. All rights reserved.
 [availability-yaml]: samples/availability.yaml
 [graphviz]: https://www.graphviz.org/
 [gtk3]: https://developer.gnome.org/gtk3/stable/
+[haskell-dot-org]: https://www.haskell.org/
+[haskell-stack]: https://haskellstack.org/
 [licence]: LICENSE
 [project-yaml]: samples/project.yaml
