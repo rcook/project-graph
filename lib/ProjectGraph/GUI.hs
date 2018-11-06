@@ -51,7 +51,7 @@ import           Graphics.UI.Gtk.Windows.Window (windowSetDefaultSize)
 import           Graphics.XDot.Parser (getOperations, getSize)
 import           Graphics.XDot.Types (Object(..), Operation, Point, Rectangle)
 import           Graphics.XDot.Viewer (drawAll)
-import           ProjectGraph.App (initApp)
+import           ProjectGraph.App (appTitle, initApp)
 import           System.Exit (exitSuccess)
 
 data State = State
@@ -81,7 +81,7 @@ display dg = do
     set window
         [ windowDefaultHeight := 512
         , windowDefaultWidth := 512
-        , windowTitle := "Project Graph"
+        , windowTitle := appTitle
         ]
 
     on window objectDestroy $ do
@@ -103,6 +103,7 @@ display dg = do
     widgetShowAll window
 
     mainGUI
+
     exitSuccess
     initGUI
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module ProjectGraph.App (initApp) where
+module ProjectGraph.App (appTitle, initApp) where
 
 #if defined(darwin_HOST_OS)
 import           Control.Monad (void)
