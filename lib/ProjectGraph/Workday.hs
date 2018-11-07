@@ -1,30 +1,17 @@
 module ProjectGraph.Workday
     ( AbsentDays
     , addWorkdays
-    , parseDate
     , nearestWorkdayOnOrAfter
     , nextWorkday
     ) where
 
-import           Data.List.Split (splitOn)
 import           Data.Set (Set)
 import qualified Data.Set as Set (member)
-import           Data.Time (Day, fromGregorian)
+import           Data.Time (Day)
 import           Data.Time.Calendar (addDays)
 import           Data.Time.Calendar.WeekDate (toWeekDate)
-import           Text.Read (readMaybe)
 
 type AbsentDays = Set Day
-
-parseDate :: String -> Maybe Day
-parseDate s =
-    case splitOn "-" s of
-        sy : sm : sd : [] -> do
-            y <- readMaybe sy
-            m <- readMaybe sm
-            d <- readMaybe sd
-            return $ fromGregorian y m d
-        _ -> Nothing
 
 isWorkday :: AbsentDays -> Day -> Bool
 isWorkday absentDays d

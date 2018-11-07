@@ -12,12 +12,12 @@ import qualified Graphics.UI.Gtk.OSX as OSX
                     , applicationSetDockIconPixbuf
                     , applicationSetMenuBar
                     )
-import           ProjectGraph.DataFiles (loadIcon)
+import           ProjectGraph.AppResources (loadIcon)
 #else
 import           Control.Monad (void)
 import qualified Graphics.UI.Gtk as Gtk (initGUI)
 import qualified Graphics.UI.Gtk.Windows.Window as Window (windowSetDefaultIcon)
-import           ProjectGraph.DataFiles (loadIcon)
+import           ProjectGraph.AppResources (loadIcon)
 import           System.Glib.Utils (setProgramName)
 #endif
 

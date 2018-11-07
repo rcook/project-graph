@@ -32,8 +32,24 @@ import           Data.Yaml
                     , withObject
                     )
 import           GHC.Generics (Generic)
-import           Options.Applicative (argument, execParser, info, long, maybeReader, metavar, optional, short, str, strOption)
+import           Graphics.UI.Gtk (initGUI)
+import           Options.Applicative
+                    ( execParser
+                    , info
+                    , long
+                    , maybeReader
+                    , metavar
+                    , option
+                    , optional
+                    , short
+                    , strOption
+                    )
+import           ProjectGraph.DateUtil (parseDate)
 import           ProjectGraph.GUI (display)
+import           ProjectGraph.GUI.ProjectConfigChooser
+                    ( ProjectConfig(ProjectConfig)
+                    , chooseProjectConfig
+                    )
 import           ProjectGraph.Planning (Plan(..), emptyPlan)
 import           ProjectGraph.Schema (Label(..), Person(..), Task(..))
 import           ProjectGraph.TopSort (Dependency(..), graphAndOrder)
@@ -41,7 +57,6 @@ import           ProjectGraph.Workday
                     ( AbsentDays
                     , addWorkdays
                     , nearestWorkdayOnOrAfter
-                    , parseDate
                     )
 import           System.Exit (exitFailure)
 import           System.FilePath (takeExtension)
@@ -69,9 +84,9 @@ outputTarget Nothing = Just GUI
 -- Command-line options
 
 data Options = Options
-    { projectPath :: FilePath
-    , availabilityPath :: FilePath
-    , startDate :: Day
+    { projectPath :: Maybe FilePath
+    , availabilityPath :: Maybe FilePath
+    , startDate :: Maybe Day
     , outputPath :: Maybe FilePath
     }
 
@@ -175,9 +190,9 @@ main :: IO ()
 main = execParser opts >>= runWithOpts
     where
         parser = Options
-            <$> argument str (metavar "PROJECTPATH")
-            <*> argument str (metavar "AVAILABILITYPATH")
-            <*> argument (maybeReader parseDate) (metavar "STARTDATE")
+            <$> (optional $ strOption (long "project" <> short 'p' <> metavar "PROJECTPATH"))
+            <*> (optional $ strOption (long "availability" <> short 'a' <> metavar "AVAILABILITYPATH"))
+            <*> (optional $ option (maybeReader parseDate) (long "start" <> short 's' <> metavar "STARTDATE"))
             <*> (optional $ strOption (long "output" <> short 'o' <> metavar "OUTPUTPATH"))
         opts = info parser mempty
 
@@ -243,19 +258,27 @@ taskLabelCompact t =
 
 runWithOpts :: Options -> IO ()
 runWithOpts opts = do
-    let target = case outputTarget (outputPath opts) of
+    initGUI
+    case opts of
+        Options (Just p) (Just a) (Just startDate) mbOutputPath -> runWithOpts2 p a startDate mbOutputPath
+        Options mbP mbA mbStartDate mbOutputPath ->
+            chooseProjectConfig Nothing mbP mbA mbStartDate $ \(ProjectConfig p a startDate) ->
+                runWithOpts2 p a startDate mbOutputPath
+
+runWithOpts2 :: FilePath -> FilePath -> Day -> Maybe FilePath -> IO ()
+runWithOpts2 projectPath availabilityPath startDate mbOutputPath = do
+    let target = case outputTarget mbOutputPath of
                     Just x -> x
                     _ -> error "Unsupported output format"
 
-    availability <- decodeFileThrow (availabilityPath opts)
+    availability <- decodeFileThrow availabilityPath
 
     let calendar = resolveAvailability availability
 
-    project <- decodeFileThrow (projectPath opts)
+    project <- decodeFileThrow projectPath
 
-    let s = startDate opts
-        peopleDays = Map.mapWithKey
-                        (\_ absentDays -> nearestWorkdayOnOrAfter absentDays s)
+    let peopleDays = Map.mapWithKey
+                        (\_ absentDays -> nearestWorkdayOnOrAfter absentDays startDate)
                         (peopleMap calendar)
         Plan ms _ ds = plan project
 
