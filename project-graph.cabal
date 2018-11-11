@@ -24,14 +24,12 @@ executable project-graph
                         , containers
                         , errors
                         , filepath
-                        , glib
                         , graphviz
                         , gtk3
                         , optparse-applicative
                         , project-graph
                         , text
                         , time
-                        , transformers
                         , yaml
 
 library
