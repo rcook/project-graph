@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -24,23 +22,12 @@ import qualified Data.Text.Lazy.IO as Text (writeFile)
 import           Data.Time (Day)
 import           Data.Yaml (decodeFileThrow)
 import           Graphics.UI.Gtk (initGUI)
-import           Options.Applicative
-                    ( execParser
-                    , info
-                    , long
-                    , maybeReader
-                    , metavar
-                    , option
-                    , optional
-                    , short
-                    , strOption
-                    )
-import           ProjectGraph.DateUtil (parseDate)
 import           ProjectGraph.GUI.ProjectConfigChooser
                     ( ProjectConfig(ProjectConfig)
                     , chooseProjectConfig
                     )
 import           ProjectGraph.GUI.ProjectWindow (display)
+import           ProjectGraph.Options (Options(..), execWithOpts)
 import           ProjectGraph.Planning (Plan(..), emptyPlan)
 import           ProjectGraph.Schema
                     ( Availability(..)
@@ -80,17 +67,6 @@ outputTarget (Just path) =
         ".txt" -> Just $ PlainText path
         _ -> Nothing
 outputTarget Nothing = Just GUI
-
--- Command-line options
-
-data Options = Options
-    { projectPath :: Maybe FilePath
-    , availabilityPath :: Maybe FilePath
-    , startDate :: Maybe Day
-    , outputPath :: Maybe FilePath
-    }
-
--- YAML serialization
 
 -- Plan
 
@@ -170,14 +146,7 @@ schedule peopleMap peopleDays tasks = do
     return result
 
 main :: IO ()
-main = execParser opts >>= runWithOpts
-    where
-        parser = Options
-            <$> (optional $ strOption (long "project" <> short 'p' <> metavar "PROJECTPATH"))
-            <*> (optional $ strOption (long "availability" <> short 'a' <> metavar "AVAILABILITYPATH"))
-            <*> (optional $ option (maybeReader parseDate) (long "start" <> short 's' <> metavar "STARTDATE"))
-            <*> (optional $ strOption (long "output" <> short 'o' <> metavar "OUTPUTPATH"))
-        opts = info parser mempty
+main = execWithOpts runWithOpts
 
 data Calendar = Calendar
     { peopleMap :: Map Person AbsentDays

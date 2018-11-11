@@ -26,7 +26,6 @@ executable project-graph
                         , filepath
                         , graphviz
                         , gtk3
-                        , optparse-applicative
                         , project-graph
                         , text
                         , time
@@ -41,6 +40,7 @@ library
                         , ProjectGraph.DateUtil
                         , ProjectGraph.GUI.ProjectConfigChooser
                         , ProjectGraph.GUI.ProjectWindow
+                        , ProjectGraph.Options
                         , ProjectGraph.Planning
                         , ProjectGraph.Scheduling
                         , ProjectGraph.Schema
@@ -54,6 +54,7 @@ library
                         , glib
                         , graphviz
                         , gtk3
+                        , optparse-applicative
                         , split
                         , template-haskell
                         , temporary
