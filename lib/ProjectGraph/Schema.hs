@@ -1,16 +1,23 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module ProjectGraph.Schema
-    ( Label(..)
+    ( Availability(..)
+    , CommonAvailability(..)
+    , Group(..)
+    , Label(..)
     , Person(..)
+    , PersonAvailability(..)
+    , Project
     , Task(..)
     , TaskMap
     ) where
 
 import           Data.Map.Strict (Map)
 import qualified Data.Text as Text (unpack)
+import           Data.Time (Day)
 import           Data.Yaml
                     ( FromJSON(..)
                     , ToJSON(..)
@@ -67,3 +74,53 @@ instance FromJSON Task where
         return $ Task title description label effort owner requires
 
 type TaskMap = Map Label Task
+
+type Project = [Group]
+
+data Group = Group
+    { title :: String
+    , description :: Maybe String
+    , tasks :: [Task]
+    }
+    deriving (Eq, Generic, Show, ToJSON)
+
+instance FromJSON Group where
+    parseJSON = withObject "group" $ \o -> do
+        title <- o .: "title"
+        description <- o .:? "description"
+        tasks <- o .:? "tasks" .!= []
+        return $ Group title description tasks
+
+data CommonAvailability = CommonAvailability
+    { absentDays :: [Day]
+    }
+    deriving (Generic, Show, ToJSON)
+
+instance FromJSON CommonAvailability where
+    parseJSON = withObject "commonAvailability" $ \o -> do
+        absentDays <- o .:? "absentDays" .!= []
+        return $ CommonAvailability absentDays
+
+data PersonAvailability = PersonAvailability
+    { person :: Person
+    , absentDays :: [Day]
+    }
+    deriving (Generic, Show, ToJSON)
+
+instance FromJSON PersonAvailability where
+    parseJSON = withObject "personAvailability" $ \o -> do
+        person <- o .: "person"
+        absentDays <- o .:? "absentDays" .!= []
+        return $ PersonAvailability person absentDays
+
+data Availability = Availability
+    { common :: CommonAvailability
+    , people :: [PersonAvailability]
+    }
+    deriving (Generic, Show, ToJSON)
+
+instance FromJSON Availability where
+    parseJSON = withObject "availability" $ \o -> do
+        common <- o .:? "common" .!= CommonAvailability []
+        people <- o .:? "people" .!= []
+        return $ Availability common people

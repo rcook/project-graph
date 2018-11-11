@@ -22,16 +22,7 @@ import           Data.Maybe (catMaybes)
 import qualified Data.Set as Set (fromList, union)
 import qualified Data.Text.Lazy.IO as Text (writeFile)
 import           Data.Time (Day)
-import           Data.Yaml
-                    ( FromJSON(..)
-                    , ToJSON(..)
-                    , (.:)
-                    , (.:?)
-                    , (.!=)
-                    , decodeFileThrow
-                    , withObject
-                    )
-import           GHC.Generics (Generic)
+import           Data.Yaml (decodeFileThrow)
 import           Graphics.UI.Gtk (initGUI)
 import           Options.Applicative
                     ( execParser
@@ -51,7 +42,16 @@ import           ProjectGraph.GUI.ProjectConfigChooser
                     )
 import           ProjectGraph.GUI.ProjectWindow (display)
 import           ProjectGraph.Planning (Plan(..), emptyPlan)
-import           ProjectGraph.Schema (Label(..), Person(..), Task(..))
+import           ProjectGraph.Schema
+                    ( Availability(..)
+                    , CommonAvailability(..)
+                    , Group(..)
+                    , Label(..)
+                    , Person(..)
+                    , PersonAvailability(..)
+                    , Project
+                    , Task(..)
+                    )
 import           ProjectGraph.TopSort (Dependency(..), graphAndOrder)
 import           ProjectGraph.Workday
                     ( AbsentDays
@@ -91,23 +91,6 @@ data Options = Options
     }
 
 -- YAML serialization
-
-type Project = [Group]
-
-data Group = Group
-    { title :: String
-    , description :: Maybe String
-    , tasks :: [Task]
-    }
-    deriving (Eq, Generic, Show, ToJSON)
-
-instance FromJSON Group where
-    parseJSON = withObject "group" $ \o -> do
-        title <- o .: "title"
-        description <- o .:? "description"
-        tasks <- o .:? "tasks" .!= []
-        return $ Group title description tasks
-
 
 -- Plan
 
@@ -195,40 +178,6 @@ main = execParser opts >>= runWithOpts
             <*> (optional $ option (maybeReader parseDate) (long "start" <> short 's' <> metavar "STARTDATE"))
             <*> (optional $ strOption (long "output" <> short 'o' <> metavar "OUTPUTPATH"))
         opts = info parser mempty
-
-data CommonAvailability = CommonAvailability
-    { absentDays :: [Day]
-    }
-    deriving (Generic, Show, ToJSON)
-
-instance FromJSON CommonAvailability where
-    parseJSON = withObject "commonAvailability" $ \o -> do
-        absentDays <- o .:? "absentDays" .!= []
-        return $ CommonAvailability absentDays
-
-data PersonAvailability = PersonAvailability
-    { person :: Person
-    , absentDays :: [Day]
-    }
-    deriving (Generic, Show, ToJSON)
-
-instance FromJSON PersonAvailability where
-    parseJSON = withObject "personAvailability" $ \o -> do
-        person <- o .: "person"
-        absentDays <- o .:? "absentDays" .!= []
-        return $ PersonAvailability person absentDays
-
-data Availability = Availability
-    { common :: CommonAvailability
-    , people :: [PersonAvailability]
-    }
-    deriving (Generic, Show, ToJSON)
-
-instance FromJSON Availability where
-    parseJSON = withObject "availability" $ \o -> do
-        common <- o .:? "common" .!= CommonAvailability []
-        people <- o .:? "people" .!= []
-        return $ Availability common people
 
 data Calendar = Calendar
     { peopleMap :: Map Person AbsentDays
