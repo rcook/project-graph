@@ -7,7 +7,7 @@ _A simple graph-based project-scheduling tool_
 Example output produced using:
 
 ```bash
-stack build --fast --exec 'project-graph samples/project.yaml samples/availability.yaml 2018-11-02'
+stack build --fast --exec 'project-graph -p samples/project.yaml -a samples/availability.yaml -s 2018-11-02'
 ```
 
 ## Install prerequisites
