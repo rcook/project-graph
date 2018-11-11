@@ -206,8 +206,6 @@ mainWithOpts projectPath availabilityPath startDate mbOutputPath = do
                 Right x -> x
                 Left s -> error s
 
-    print result
-
     case target of
         CSV path -> ByteString.writeFile path $ Csv.encode result
         DOT path -> do

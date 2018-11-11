@@ -124,7 +124,6 @@ display dg = do
     widgetShowAll window
 
     on window objectDestroy $ do
-        putStrLn "Event: window.objectDestroy"
         mainQuit
         return ()
 
