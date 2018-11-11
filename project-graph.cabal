@@ -51,6 +51,7 @@ library
                         , cairo
                         , containers
                         , file-embed
+                        , gi-gtk
                         , glib
                         , graphviz
                         , gtk3

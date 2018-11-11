@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module ProjectGraph.AppResources
@@ -8,11 +9,10 @@ module ProjectGraph.AppResources
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (hPut)
 import           Data.FileEmbed (embedFile, embedStringFile, makeRelativeToProject)
+import qualified Data.Text as Text (length)
+import           GI.Gtk hiding (renderIcon)
 import           Graphics.UI.Gtk
-                    ( Builder
-                    , Pixbuf
-                    , builderAddFromString
-                    , builderNew
+                    ( Pixbuf
                     , pixbufNewFromFile
                     )
 import           Language.Haskell.TH (Exp, Q)
@@ -34,6 +34,6 @@ renderIcon bytes =
 
 mainBuilder :: IO Builder
 mainBuilder = do
-    builder <- builderNew
-    builderAddFromString builder ($(embedStringFile "ui/main.glade") :: String)
+    let xml = $(embedStringFile "ui/main.glade")
+    builder <- builderNewFromString xml (fromIntegral $ Text.length xml)
     return builder

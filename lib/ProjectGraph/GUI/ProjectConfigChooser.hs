@@ -1,46 +1,22 @@
+{-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module ProjectGraph.GUI.ProjectConfigChooser
     ( ProjectConfig(..)
     , chooseProjectConfig
     ) where
 
-import           Control.Exception (bracket)
-import           Control.Monad.Trans.Class (MonadTrans(..))
-import           Data.Maybe (isJust)
+import           Data.Maybe (fromJust, isJust)
+import qualified Data.Text as Text (pack, unpack)
 import           Data.Time (Day)
-import           Graphics.UI.Gtk
-                    ( AttrOp(..)
-                    , FileChooserAction(..)
-                    , ResponseId(..)
-                    , Window
-                    , builderGetObject
-                    , buttonPressEvent
-                    , calendarDay
-                    , calendarGetDate
-                    , calendarMonth
-                    , calendarYear
-                    , castToButton
-                    , castToCalendar
-                    , castToDialog
-                    , castToEntry
-                    , dialogResponse
-                    , dialogRun
-                    , entryGetText
-                    , entryText
-                    , fileChooserAddFilter
-                    , fileChooserDialogNew
-                    , fileChooserGetFilename
-                    , fileFilterAddPattern
-                    , fileFilterNew
-                    , fileFilterSetName
-                    , on
-                    , set
-                    , widgetDestroy
-                    , widgetSetSensitive
-                    , windowTransientFor
-                    )
+import           GHC.Int (Int32)
+import           GI.Gtk
 import           ProjectGraph.AppResources (mainBuilder)
 import           ProjectGraph.DateUtil (fromDate, toDate)
-import           System.Glib.UTFString (glibToString, stringToGlib)
+
+responseAccept :: Int32
+responseAccept = -3
+responseCancel = -6
 
 data ProjectConfig = ProjectConfig
     { projectPath :: FilePath
@@ -57,77 +33,71 @@ chooseProjectConfig ::
     -> IO ()
 chooseProjectConfig mbWindow mbProjectPath mbAvailabilityPath mbStartDate cb = do
     builder <- mainBuilder
-
-    dialog <- builderGetObject builder castToDialog "dlg"
+    dialog <- #getObject builder "dlg" >>= unsafeCastTo Dialog . fromJust
     case mbWindow of
-        Just window -> set dialog [ windowTransientFor := window ]
+        Just window -> set dialog [ #transientFor := window ]
         _ -> return ()
 
-    ctlProjectPath <- builderGetObject builder castToEntry "ctlProjectPath"
+    ctlProjectPath <- #getObject builder "ctlProjectPath" >>= unsafeCastTo Entry . fromJust
     case mbProjectPath of
-        Just p -> set ctlProjectPath [ entryText := p]
+        Just p -> set ctlProjectPath [ #text := Text.pack p]
         _ -> return ()
 
-    ctlAvailabilityPath <- builderGetObject builder castToEntry "ctlAvailabilityPath"
+    ctlAvailabilityPath <- #getObject builder "ctlAvailabilityPath" >>= unsafeCastTo Entry . fromJust
     case mbAvailabilityPath of
-        Just p -> set ctlAvailabilityPath [ entryText := p]
+        Just p -> set ctlAvailabilityPath [ #text := Text.pack p]
         _ -> return ()
 
-    ctlStartDate <- builderGetObject builder castToCalendar "ctlStartDate"
+    ctlStartDate <- #getObject builder "ctlStartDate" >>= unsafeCastTo Calendar . fromJust
     case mbStartDate of
         Just date -> do
             let (y, m, d) = fromDate date
             set ctlStartDate
-                [ calendarYear := y
-                , calendarMonth := m - 1
-                , calendarDay := d
+                [ #year := fromIntegral y
+                , #month := fromIntegral $ m - 1
+                , #day := fromIntegral d
                 ]
         _ -> return ()
 
-    btnProjectPath <- builderGetObject builder castToButton "btnProjectPath"
-    btnAvailabilityPath <- builderGetObject builder castToButton "btnAvailabilityPath"
-    btnCancel <- builderGetObject builder castToButton "btnCancel"
-    btnOK <- builderGetObject builder castToButton "btnOK"
+    btnProjectPath <- #getObject builder "btnProjectPath" >>= unsafeCastTo Button . fromJust
+    btnAvailabilityPath <- #getObject builder "btnAvailabilityPath" >>= unsafeCastTo Button . fromJust
+    btnCancel <- #getObject builder "btnCancel" >>= unsafeCastTo Button . fromJust
+    btnOK <- #getObject builder "btnOK" >>= unsafeCastTo Button . fromJust
 
     mbResult <- getProjectConfig ctlProjectPath ctlAvailabilityPath ctlStartDate
-    widgetSetSensitive btnOK (isJust mbResult)
+    #setSensitive btnOK (isJust mbResult)
 
-    on btnProjectPath buttonPressEvent $ lift $ do
+    on btnProjectPath #clicked $ do
         chooseOpenFile mbWindow "Select project file" $ \p ->
-            set ctlProjectPath [ entryText := stringToGlib p ]
+            set ctlProjectPath [ #text := Text.pack p ]
         mbResult <- getProjectConfig ctlProjectPath ctlAvailabilityPath ctlStartDate
-        widgetSetSensitive btnOK (isJust mbResult)
-        return True
+        #setSensitive btnOK (isJust mbResult)
 
-    on btnAvailabilityPath buttonPressEvent $ lift $ do
+    on btnAvailabilityPath #clicked $ do
         chooseOpenFile mbWindow "Select availability file" $ \p ->
-            set ctlAvailabilityPath [ entryText := stringToGlib p ]
+            set ctlAvailabilityPath [ #text := Text.pack p ]
         mbResult <- getProjectConfig ctlProjectPath ctlAvailabilityPath ctlStartDate
-        widgetSetSensitive btnOK (isJust mbResult)
-        return True
+        #setSensitive btnOK (isJust mbResult)
 
-    on btnCancel buttonPressEvent $ lift $ do
-        dialogResponse dialog ResponseCancel
-        return True
+    on btnCancel #clicked $ #response dialog responseCancel
 
-    on btnOK buttonPressEvent $ lift $ do
-        dialogResponse dialog ResponseAccept
-        return True
+    on btnOK #clicked $ #response dialog responseAccept
 
-    responseId <- dialogRun dialog
-    case responseId of
-        ResponseAccept -> do
+    responseId <- #run dialog
+    if responseId == responseAccept
+        then do
             Just result  <- getProjectConfig ctlProjectPath ctlAvailabilityPath ctlStartDate
-            widgetDestroy dialog
+            #destroy dialog
             cb result
-        _ -> widgetDestroy dialog
+        else #destroy dialog
 
     where
+        getProjectConfig :: Entry -> Entry -> Calendar -> IO (Maybe ProjectConfig)
         getProjectConfig ctlProjectPath ctlAvailabilityPath ctlStartDate = do
-            projectPath <- glibToString <$> entryGetText ctlProjectPath
-            availabilityPath <- glibToString <$> entryGetText ctlAvailabilityPath
-            (y, m, d) <- calendarGetDate ctlStartDate
-            let startDate = toDate y (m + 1) d
+            projectPath <- Text.unpack <$> #getText ctlProjectPath
+            availabilityPath <- Text.unpack <$> #getText ctlAvailabilityPath
+            (y, m, d) <- #getDate ctlStartDate
+            let startDate = toDate (fromIntegral y) (fromIntegral m + 1) (fromIntegral d)
             if length projectPath > 0 && length availabilityPath > 0
                 then return $ Just (ProjectConfig projectPath availabilityPath startDate)
                 else return Nothing
@@ -137,33 +107,27 @@ chooseOpenFile ::
     -> String
     -> (FilePath -> IO ())
     -> IO ()
-chooseOpenFile mbWindow title f =
-    bracket
-        (fileChooserDialogNew
-            (Just title)
-            mbWindow
-            FileChooserActionOpen
-                [ ("_Cancel", ResponseCancel)
-                , ("_Open", ResponseAccept)
-                ])
-        widgetDestroy
-        (\dialog -> do
-            filter0 <- fileFilterNew
-            fileFilterSetName filter0 "YAML files"
-            fileFilterAddPattern filter0 "*.yaml"
-            fileFilterAddPattern filter0 "*.yml"
-            fileChooserAddFilter dialog filter0
-            filter1 <- fileFilterNew
-            fileFilterSetName filter1 "All files"
-            fileFilterAddPattern filter1 "*"
-            fileChooserAddFilter dialog filter1
+chooseOpenFile mbWindow title cb = do
+    dialog <- new FileChooserNative [ #action := FileChooserActionOpen ]
 
-            responseId <- dialogRun dialog
-            case responseId of
-                ResponseAccept -> do
-                    mbFileName <- fileChooserGetFilename dialog
-                    case mbFileName of
-                        Just fileName -> f fileName
-                        _ -> return ()
+    fileChooser <- toFileChooser dialog
+
+    filter0 <- new FileFilter []
+    #setName filter0 $ Just "YAML files"
+    #addPattern filter0 "*.yaml"
+    #addPattern filter0 "*.yml"
+    #addFilter fileChooser filter0
+    filter1 <- new FileFilter []
+    #setName filter1 $ Just "All files"
+    #addPattern filter1 "*"
+    #addFilter fileChooser filter1
+
+    responseId <- #run dialog
+    if responseId == responseAccept
+        then do
+            c <- toFileChooser dialog
+            mbPath <- #getFilename c
+            case mbPath of
+                Just p -> cb p
                 _ -> return ()
-        )
+        else return ()
