@@ -145,9 +145,6 @@ schedule peopleMap peopleDays tasks = do
                         tasks
     return result
 
-main :: IO ()
-main = execWithOpts runWithOpts
-
 data Calendar = Calendar
     { peopleMap :: Map Person AbsentDays
     }
@@ -174,17 +171,17 @@ taskLabelCompact t =
                         , show <$> effort t
                         ]
 
-runWithOpts :: Options -> IO ()
-runWithOpts opts = do
+main :: IO ()
+main = execWithOpts $ \opts -> do
     initGUI
     case opts of
-        Options (Just p) (Just a) (Just startDate) mbOutputPath -> runWithOpts2 p a startDate mbOutputPath
+        Options (Just p) (Just a) (Just startDate) mbOutputPath -> mainWithOpts p a startDate mbOutputPath
         Options mbP mbA mbStartDate mbOutputPath ->
             chooseProjectConfig Nothing mbP mbA mbStartDate $ \(ProjectConfig p a startDate) ->
-                runWithOpts2 p a startDate mbOutputPath
+                mainWithOpts p a startDate mbOutputPath
 
-runWithOpts2 :: FilePath -> FilePath -> Day -> Maybe FilePath -> IO ()
-runWithOpts2 projectPath availabilityPath startDate mbOutputPath = do
+mainWithOpts :: FilePath -> FilePath -> Day -> Maybe FilePath -> IO ()
+mainWithOpts projectPath availabilityPath startDate mbOutputPath = do
     let target = case outputTarget mbOutputPath of
                     Just x -> x
                     _ -> error "Unsupported output format"
