@@ -41,8 +41,8 @@ library
   exposed-modules:        ProjectGraph.App
                         , ProjectGraph.AppResources
                         , ProjectGraph.DateUtil
-                        , ProjectGraph.GUI
                         , ProjectGraph.GUI.ProjectConfigChooser
+                        , ProjectGraph.GUI.ProjectWindow
                         , ProjectGraph.Planning
                         , ProjectGraph.Scheduling
                         , ProjectGraph.Schema

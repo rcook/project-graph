@@ -1,4 +1,4 @@
-module ProjectGraph.GUI (display) where
+module ProjectGraph.GUI.ProjectWindow (display) where
 
 import           Control.Monad (unless, when)
 import           Control.Monad.Trans.Class (MonadTrans(..))

@@ -45,11 +45,11 @@ import           Options.Applicative
                     , strOption
                     )
 import           ProjectGraph.DateUtil (parseDate)
-import           ProjectGraph.GUI (display)
 import           ProjectGraph.GUI.ProjectConfigChooser
                     ( ProjectConfig(ProjectConfig)
                     , chooseProjectConfig
                     )
+import           ProjectGraph.GUI.ProjectWindow (display)
 import           ProjectGraph.Planning (Plan(..), emptyPlan)
 import           ProjectGraph.Schema (Label(..), Person(..), Task(..))
 import           ProjectGraph.TopSort (Dependency(..), graphAndOrder)
