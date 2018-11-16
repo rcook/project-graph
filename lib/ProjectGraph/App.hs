@@ -4,15 +4,17 @@
 module ProjectGraph.App (appTitle, initApp) where
 
 #if defined(darwin_HOST_OS)
-import           Control.Monad (void)
+import           Foreign (castForeignPtr)
+import           GI.GdkPixbuf
 import           GI.Gtk
-import qualified Graphics.UI.Gtk as Gtk (initGUI, menuBarNew)
+import qualified GI.Gtk as Gtk (init)
 import qualified Graphics.UI.Gtk.OSX as OSX
                     ( applicationNew
                     , applicationReady
                     , applicationSetDockIconPixbuf
                     , applicationSetMenuBar
                     )
+import qualified Graphics.UI.Gtk.Types as Gtk (MenuBar(..), Pixbuf(..))
 import           ProjectGraph.AppResources (loadIcon)
 #else
 import           Control.Monad (void)
@@ -27,14 +29,20 @@ appTitle = "Project Graph"
 
 #if defined(darwin_HOST_OS)
 
+coercePixbuf :: Pixbuf -> Gtk.Pixbuf
+coercePixbuf (Pixbuf ptr) = (Gtk.Pixbuf . castForeignPtr . managedForeignPtr) ptr
+
+coerceMenuBar :: MenuBar -> Gtk.MenuBar
+coerceMenuBar (MenuBar ptr) = (Gtk.MenuBar . castForeignPtr . managedForeignPtr) ptr
+
 initApp :: IO ()
 initApp = do
-    void Gtk.initGUI
+    Gtk.init Nothing
     app <- OSX.applicationNew
-    menuBar <- Gtk.menuBarNew
-    OSX.applicationSetMenuBar app menuBar
+    menuBar <- new MenuBar []
+    OSX.applicationSetMenuBar app (coerceMenuBar menuBar)
     icon <- $loadIcon
-    OSX.applicationSetDockIconPixbuf app (Just icon)
+    OSX.applicationSetDockIconPixbuf app (Just $ coercePixbuf icon)
     OSX.applicationReady app
 
 #else
