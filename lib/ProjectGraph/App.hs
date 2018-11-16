@@ -5,6 +5,7 @@ module ProjectGraph.App (appTitle, initApp) where
 
 #if defined(darwin_HOST_OS)
 import           Control.Monad (void)
+import           GI.Gtk
 import qualified Graphics.UI.Gtk as Gtk (initGUI, menuBarNew)
 import qualified Graphics.UI.Gtk.OSX as OSX
                     ( applicationNew
@@ -15,8 +16,8 @@ import qualified Graphics.UI.Gtk.OSX as OSX
 import           ProjectGraph.AppResources (loadIcon)
 #else
 import           Control.Monad (void)
-import qualified Graphics.UI.Gtk as Gtk (initGUI)
-import qualified Graphics.UI.Gtk.Windows.Window as Window (windowSetDefaultIcon)
+import           GI.Gtk
+import qualified GI.Gtk as Gtk (init)
 import           ProjectGraph.AppResources (loadIcon)
 import           System.Glib.Utils (setProgramName)
 #endif
@@ -41,8 +42,8 @@ initApp = do
 initApp :: IO ()
 initApp = do
     icon <- $loadIcon
-    Window.windowSetDefaultIcon (Just icon)
+    windowSetDefaultIcon icon
     setProgramName appTitle
-    void Gtk.initGUI
+    void $ Gtk.init Nothing
 
 #endif

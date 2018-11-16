@@ -51,6 +51,7 @@ library
                         , cairo
                         , containers
                         , file-embed
+                        , gi-gdkpixbuf
                         , gi-gtk
                         , glib
                         , graphviz

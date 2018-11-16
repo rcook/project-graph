@@ -10,11 +10,8 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (hPut)
 import           Data.FileEmbed (embedFile, embedStringFile, makeRelativeToProject)
 import qualified Data.Text as Text (length)
+import           GI.GdkPixbuf
 import           GI.Gtk hiding (renderIcon)
-import           Graphics.UI.Gtk
-                    ( Pixbuf
-                    , pixbufNewFromFile
-                    )
 import           Language.Haskell.TH (Exp, Q)
 import           System.IO (hClose)
 import           System.IO.Temp (withSystemTempFile)
