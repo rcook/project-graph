@@ -28,7 +28,7 @@ import           Text.Printf (printf)
 #else
 import           Control.Monad (void)
 import           GI.Gtk
-import qualified GI.Gtk as Gtk (init)
+import qualified GI.Gtk as Gtk (init, main)
 import           ProjectGraph.AppResources (loadIcon)
 import           System.Glib.Utils (setProgramName)
 #endif
@@ -76,5 +76,8 @@ initApp = do
     windowSetDefaultIcon icon
     setProgramName appTitle
     void $ Gtk.init Nothing
+
+gtkMain :: IO ()
+gtkMain = Gtk.main
 
 #endif

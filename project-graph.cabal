@@ -51,6 +51,8 @@ library
                         , cairo
                         , containers
                         , file-embed
+                        , gi-cairo
+                        , gi-gdk
                         , gi-gdkpixbuf
                         , gi-gtk
                         , glib

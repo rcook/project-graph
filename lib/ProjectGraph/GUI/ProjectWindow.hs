@@ -1,7 +1,9 @@
+{-# LANGUAGE OverloadedLabels #-}
+
 module ProjectGraph.GUI.ProjectWindow (display) where
 
 import           Control.Monad (unless, when)
-import           Control.Monad.Trans.Class (MonadTrans(..))
+import           Control.Monad.Trans.Reader (runReaderT)
 import           Data.GraphViz
                     ( DotGraph
                     , GraphvizCommand(..)
@@ -13,39 +15,33 @@ import           Data.GraphViz
 import           Data.GraphViz.Commands.IO (hGetDot)
 import           Data.GraphViz.Types (ParseDotRepr)
 import           Data.IORef (IORef, modifyIORef, newIORef, readIORef)
-import           Graphics.Rendering.Cairo (Render, liftIO, restore, save, scale, translate)
-import           Graphics.UI.Gtk
+import qualified Data.Text as Text (pack)
+import           Data.Word (Word32)
+import           Foreign.Ptr (castPtr)
+import           Graphics.Rendering.Cairo
+                    ( liftIO
+                    , restore
+                    , save
+                    , scale
+                    , translate
+                    )
+import           Graphics.Rendering.Cairo.Internal (Render(..))
+import           Graphics.Rendering.Cairo.Types (Cairo(..))
+import           GI.Cairo (Context(..))
+import           GI.Gdk (EventMask(..), withManagedPtr)
+import           GI.Gtk
                     ( AttrOp(..)
-                    , Click(..)
-                    , EventMask(..)
-                    , MouseButton(..)
-                    , WidgetClass
-                    , buttonPressEvent
-                    , containerAdd
-                    , draw
-                    , drawingAreaNew
-                    , eventButton
-                    , eventClick
-                    , eventCoordinates
+                    , DrawingArea(..)
+                    , Window(..)
+                    , get
                     , mainQuit
-                    , motionNotifyEvent
-                    , objectDestroy
+                    , new
                     , on
-                    , set
-                    , widgetAddEvents
-                    , widgetGetAllocatedHeight
-                    , widgetGetAllocatedWidth
-                    , widgetQueueDraw
-                    , widgetShowAll
-                    , windowDefaultHeight
-                    , windowDefaultWidth
-                    , windowNew
-                    , windowTitle
                     )
 import           Graphics.XDot.Parser (getOperations, getSize)
 import           Graphics.XDot.Types (Object(..), Operation, Point, Rectangle)
 import           Graphics.XDot.Viewer (drawAll)
-import           ProjectGraph.App (appTitle, gtkMain)
+import           ProjectGraph.App (appTitle, gtkMain, initApp)
 
 data State = State
     { objects :: ([(Object String, Operation)], Rectangle)
@@ -54,55 +50,58 @@ data State = State
     , hover :: Object String
     }
 
+leftButton :: Word32
+leftButton = 1
+
 toXDotGraph :: (Ord a, ParseDotRepr dg n, PrintDot a) => DotGraph a -> IO (dg n)
 toXDotGraph dg = graphvizWithHandle Dot dg (XDot Nothing) hGetDot
 
 display :: (Ord a, PrintDot a) => DotGraph a -> IO ()
 display dg = do
     quitWithoutGraphviz "Graphviz is not installed"
-
     xdg <- toXDotGraph dg
 
     let objs = (getOperations xdg, getSize xdg)
 
     state <- newIORef $ State objs [] (0, 0) None
 
-    window <- windowNew
+    initApp
 
-    set window
-        [ windowDefaultHeight := 512
-        , windowDefaultWidth := 512
-        , windowTitle := appTitle
-        ]
+    window <- new Window
+                [ #defaultHeight := 512
+                , #defaultWidth := 512
+                , #title := Text.pack appTitle
+                ]
+    on window #destroy mainQuit
 
-    on window objectDestroy $ do
-        mainQuit
-        return ()
+    canvas <- new DrawingArea []
+    #add window canvas
 
-    canvas <- drawingAreaNew
-    containerAdd window canvas
+    #addEvents canvas
+                [ EventMaskButtonPressMask
+                , EventMaskPointerMotionMask
+                ]
 
-    widgetAddEvents canvas [ PointerMotionMask ]
+    on canvas #draw $ \context -> do
+        w <- fromIntegral <$> #getAllocatedWidth canvas
+        h <- fromIntegral <$> #getAllocatedHeight canvas
+        renderWithContext context $ redraw w h state
+        return True
 
-    on canvas draw $
-        redraw canvas state
+    on canvas #motionNotifyEvent $ \eventMotion -> do
+        x <- get eventMotion #x
+        y <- get eventMotion #y
+        modifyIORef state (\s -> s { mouseCoords = (x, y) })
+        onMotionNotifyEvent canvas state
+        return True
 
-    on canvas motionNotifyEvent $ do
-        coords <- eventCoordinates
-        lift $ do
-            modifyIORef state (\s -> s { mouseCoords = coords })
-            onMotionNotifyEvent canvas state
-            return True
+    on canvas #buttonPressEvent $ \eventButton -> do
+        button <- get eventButton #button
+        when (button == leftButton) $ do
+            onButtonPressEvent state
+        return True
 
-    on canvas buttonPressEvent $ do
-        button <- eventButton
-        eClick <- eventClick
-        lift $ do
-            when (button == LeftButton && eClick == SingleClick) $
-                onButtonPressEvent state
-            return True
-
-    widgetShowAll window
+    #showAll window
 
     gtkMain
 
@@ -114,7 +113,7 @@ onButtonPressEvent state = do
         Edge f t -> putStrLn $ "Edge clicked: " ++ f ++ " -> " ++ t
         _ -> return ()
 
-onMotionNotifyEvent :: WidgetClass w => w -> IORef State -> IO ()
+onMotionNotifyEvent :: DrawingArea -> IORef State -> IO ()
 onMotionNotifyEvent canvas state = do
     oldS <- readIORef state
     let oldHover = hover oldS
@@ -133,13 +132,18 @@ onMotionNotifyEvent canvas state = do
             )
 
     s <- readIORef state
-    unless (oldHover == hover s) $ widgetQueueDraw canvas
+    unless (oldHover == hover s) $ #queueDraw canvas
 
-redraw :: WidgetClass w => w -> IORef State -> Render ()
-redraw canvas state = do
+renderWithContext :: GI.Cairo.Context -> Render () -> IO ()
+renderWithContext ct r = withManagedPtr ct $ \p ->
+    runReaderT (runRender r) (Cairo (castPtr p))
+
+type Width = Int
+type Height = Int
+
+redraw :: Width -> Height -> IORef State -> Render ()
+redraw rw rh state = do
     s <- liftIO $ readIORef state
-    rw <- liftIO $ widgetGetAllocatedWidth canvas
-    rh <- liftIO $ widgetGetAllocatedHeight canvas
 
     let (ops, size'@(_,_,sw,sh)) = objects s
 
