@@ -27,7 +27,6 @@ import           Graphics.UI.Gtk
                     , eventButton
                     , eventClick
                     , eventCoordinates
-                    , mainGUI
                     , mainQuit
                     , motionNotifyEvent
                     , objectDestroy
@@ -46,7 +45,7 @@ import           Graphics.UI.Gtk
 import           Graphics.XDot.Parser (getOperations, getSize)
 import           Graphics.XDot.Types (Object(..), Operation, Point, Rectangle)
 import           Graphics.XDot.Viewer (drawAll)
-import           ProjectGraph.App (appTitle)
+import           ProjectGraph.App (appTitle, gtkMain)
 
 data State = State
     { objects :: ([(Object String, Operation)], Rectangle)
@@ -105,11 +104,7 @@ display dg = do
 
     widgetShowAll window
 
-    on window objectDestroy $ do
-        mainQuit
-        return ()
-
-    mainGUI
+    gtkMain
 
 onButtonPressEvent :: IORef State -> IO ()
 onButtonPressEvent state = do

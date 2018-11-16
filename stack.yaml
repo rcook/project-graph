@@ -3,6 +3,7 @@ packages: [.]
 allow-newer: true
 extra-deps:
 - gtk3-mac-integration-0.3.4.0
+- posix-escape-0.1
 - github: rcook/xdot
   commit: b373370a39287613e728e3abc4d875905bb17ed4
   extra-dep: true

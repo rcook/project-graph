@@ -67,3 +67,6 @@ library
                         , yaml
   if os(osx)
     build-depends:        gtk3-mac-integration
+                        , posix-escape
+                        , process
+                        , unix
