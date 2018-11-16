@@ -47,11 +47,10 @@ coerceMenuBar (MenuBar ptr) = (Gtk.MenuBar . castForeignPtr . managedForeignPtr)
 setAppTitle :: String -> IO ()
 setAppTitle title = do
     pid <- getProcessID
-    let command = printf
+    void $ system $ printf
                     "/usr/bin/lsappinfo setinfo %s --name %s"
                     (show pid)
-                    (escape "HELLO \"-\" WORLD")
-    void $ system command
+                    (escape title)
 
 initApp :: IO ()
 initApp = do
