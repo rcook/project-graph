@@ -46,7 +46,7 @@ import           Graphics.UI.Gtk
 import           Graphics.XDot.Parser (getOperations, getSize)
 import           Graphics.XDot.Types (Object(..), Operation, Point, Rectangle)
 import           Graphics.XDot.Viewer (drawAll)
-import           ProjectGraph.App (appTitle, initApp)
+import           ProjectGraph.App (appTitle)
 
 data State = State
     { objects :: ([(Object String, Operation)], Rectangle)
@@ -67,8 +67,6 @@ display dg = do
     let objs = (getOperations xdg, getSize xdg)
 
     state <- newIORef $ State objs [] (0, 0) None
-
-    initApp
 
     window <- windowNew
 

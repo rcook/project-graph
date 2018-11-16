@@ -21,7 +21,7 @@ import qualified Data.Set as Set (fromList, union)
 import qualified Data.Text.Lazy.IO as Text (writeFile)
 import           Data.Time (Day)
 import           Data.Yaml (decodeFileThrow)
-import           Graphics.UI.Gtk (initGUI)
+import           ProjectGraph.App (initApp)
 import           ProjectGraph.GUI.ProjectConfigChooser
                     ( ProjectConfig(ProjectConfig)
                     , chooseProjectConfig
@@ -173,7 +173,7 @@ taskLabelCompact t =
 
 main :: IO ()
 main = execWithOpts $ \opts -> do
-    initGUI
+    initApp
     case opts of
         Options (Just p) (Just a) (Just startDate) mbOutputPath -> mainWithOpts p a startDate mbOutputPath
         Options mbP mbA mbStartDate mbOutputPath ->
