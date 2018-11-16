@@ -82,20 +82,6 @@ display dg = do
         mainQuit
         return ()
 
-    {-
-    button <- buttonNew
-    containerAdd window button
-
-    set button
-        [ buttonLabel := "Close"
-        ]
-
-    on button buttonPressEvent $ lift $ do
-        putStrLn "Quit app"
-        mainQuit
-        return True
-    -}
-
     canvas <- drawingAreaNew
     containerAdd window canvas
 
@@ -115,9 +101,7 @@ display dg = do
         button <- eventButton
         eClick <- eventClick
         lift $ do
-            putStrLn "Event: canvas.buttonPressEvent"
-            when (button == LeftButton && eClick == SingleClick) $ do
-                putStrLn "Event: left single-click"
+            when (button == LeftButton && eClick == SingleClick) $
                 onButtonPressEvent state
             return True
 
