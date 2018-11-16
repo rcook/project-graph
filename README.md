@@ -44,6 +44,12 @@ brew install \
   gtk-mac-integration
 ```
 
+You may also need to set up the `PKG_CONFIG_PATH` environment variable:
+
+```bash
+eval $(brew info libffi | grep PKG_CONFIG_PATH)
+```
+
 ## Use ghcid for iterative development
 
 ```bash
