@@ -11,6 +11,21 @@ import qualified Data.Text as Text (pack, unpack)
 import           Data.Time (Day)
 import           GHC.Int (Int32)
 import           GI.Gtk
+                    ( AttrOp(..)
+                    , Button(..)
+                    , Calendar(..)
+                    , Dialog(..)
+                    , Entry(..)
+                    , FileChooserAction(..)
+                    , FileChooserNative(..)
+                    , FileFilter(..)
+                    , Window
+                    , new
+                    , on
+                    , set
+                    , toFileChooser
+                    , unsafeCastTo
+                    )
 import           ProjectGraph.AppResources (mainBuilder)
 import           ProjectGraph.DateUtil (fromDate, toDate)
 
