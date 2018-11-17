@@ -25,7 +25,6 @@ executable project-graph
                         , errors
                         , filepath
                         , graphviz
-                        , gtk3
                         , project-graph
                         , text
                         , time
@@ -57,7 +56,6 @@ library
                         , gi-gtk
                         , glib
                         , graphviz
-                        , gtk3
                         , optparse-applicative
                         , split
                         , template-haskell
