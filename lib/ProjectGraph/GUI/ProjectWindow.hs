@@ -148,21 +148,21 @@ redraw rw rh state = do
     let (ops, size'@(_,_,sw,sh)) = objects s
 
     -- Proportional scaling
-    let scalex = min (fromIntegral rw / sw) (fromIntegral rh / sh)
-        scaley = scalex
-        offsetx = 0.5 * fromIntegral rw
-        offsety = 0.5 * fromIntegral rh
+    let scaleX = min (fromIntegral rw / sw) (fromIntegral rh / sh)
+        scaleY = scaleX
+        offsetX = 0.5 * fromIntegral rw
+        offsetY = 0.5 * fromIntegral rh
 
     save
-    translate offsetx offsety
-    scale scalex scaley
+    translate offsetX offsetY
+    scale scaleX scaleY
 
     result <- drawAll (hover s) size' ops
 
     restore
 
     let boundingBoxes = map
-            (\(o, (x, y, w, h)) -> (o, (x * scalex + offsetx, y * scaley + offsety, w * scalex, h * scaley)))
+            (\(o, (x, y, w, h)) -> (o, (x * scaleX + offsetX, y * scaleY + offsetY, w * scaleX, h * scaleY)))
             result
 
     liftIO $ modifyIORef state (\s' -> s' { bounds = boundingBoxes })
