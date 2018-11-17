@@ -50,6 +50,10 @@ data State = State
     , hover :: Object String
     }
 
+type Width = Int
+
+type Height = Int
+
 leftButton :: Word32
 leftButton = 1
 
@@ -137,9 +141,6 @@ onMotionNotifyEvent canvas state = do
 renderWithContext :: GI.Cairo.Context -> Render () -> IO ()
 renderWithContext ct r = withManagedPtr ct $ \p ->
     runReaderT (runRender r) (Cairo (castPtr p))
-
-type Width = Int
-type Height = Int
 
 redraw :: Width -> Height -> IORef State -> Render ()
 redraw rw rh state = do
