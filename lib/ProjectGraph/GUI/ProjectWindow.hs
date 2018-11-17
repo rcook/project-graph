@@ -32,6 +32,7 @@ import           GI.Gdk (EventMask(..), withManagedPtr)
 import           GI.Gtk
                     ( AttrOp(..)
                     , DrawingArea(..)
+                    , WindowPosition(..)
                     , Window(..)
                     , get
                     , mainQuit
@@ -76,6 +77,8 @@ display dg = do
                 , #defaultWidth := 512
                 , #title := Text.pack appTitle
                 ]
+    #setPosition window WindowPositionCenter
+
     on window #destroy mainQuit
 
     canvas <- new DrawingArea []
